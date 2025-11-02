@@ -64,11 +64,12 @@ kubectl cp ./honeystack/clickhouse/infer_flat.json $podname:/var/lib/clickhouse/
 kubectl exec -i -n click $podname -- clickhouse-client --multiquery --database=default <<'EOF'
 CREATE TABLE IF NOT EXISTS default.kubescape_logs
 ENGINE = MergeTree
-ORDER BY event_time_dt
-PARTITION BY toYYYYMM(event_time_dt)
+ORDER BY event_time
+PARTITION BY (toYYYYMM(event_time), hostname)
 AS SELECT     *,
-    parseDateTimeBestEffort(event_time) AS event_time_dt
+    parseDateTimeBestEffort(event_time1) AS event_time
 FROM file('/var/lib/clickhouse/user_files/infer.json', 'JSONEachRow')
 SETTINGS schema_inference_make_columns_nullable = 0;
-ALTER TABLE default.kubescape_logs DROP COLUMN event_time;
+ALTER TABLE default.kubescape_logs DROP COLUMN event_time1;
 EOF
+

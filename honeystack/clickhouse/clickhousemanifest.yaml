@@ -236,7 +236,7 @@ data:
     
         <users>
             <default>
-                <password></password>
+                <password>test_password</password>
                 <profile>default</profile>
                 <networks>
                     <ip>::1</ip>
