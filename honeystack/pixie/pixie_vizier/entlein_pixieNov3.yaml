@@ -1378,7 +1378,7 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-tls-config
-        image: docker.io/entlein/vizier-metadata_server_image:2025-11-03_11-38-40.06_UTC
+        image: docker.io/entlein/vizier-metadata_server_image:2025-11-03_11-38-40.061_UTC
         livenessProbe:
           httpGet:
             path: /healthz
@@ -1656,7 +1656,7 @@ spec:
         - configMapRef:
             name: pl-cluster-config
             optional: true
-        image: docker.io/entlein/vizier-cert_provisioner_image:2025-11-03_11-38-40.06_UTC
+        image: docker.io/entlein/vizier-cert_provisioner_image:2025-11-03_11-38-40.061_UTC
         name: provisioner
         securityContext:
           allowPrivilegeEscalation: false
