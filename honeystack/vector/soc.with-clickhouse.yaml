@@ -145,7 +145,12 @@ args:
   - "/etc/vector/"
 
 # env -- Set environment variables for Vector containers.
-env: []
+
+env:
+  - name: NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
   # - name: MY_VARIABLE
   #   valueFrom:
   #     secretKeyRef:
@@ -381,7 +386,7 @@ customConfig:
         .field6 = if exists(.BaseRuntimeMetadata.infectedPID) { .BaseRuntimeMetadata.infectedPID } else { "1" }
         .key, err = to_string(.field1) + to_string(.field2) + to_string(.field3) + to_string(.field4) + to_string(.field5) + to_string(.field6) 
         .md5_hash = to_string(md5(.key))
-        .hostname = get_hostname!()
+        .hostname = get_env_var!("NODE_NAME")
         .event_time = .time
         del(.field1)
         del(.field2)
@@ -443,6 +448,7 @@ customConfig:
         - kubescape-create_key
       database: default
       table: kubescape_logs
+      skip_unknown_fields: true
       endpoint: "http://hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local:8123"
       auth:
         strategy: "basic"
