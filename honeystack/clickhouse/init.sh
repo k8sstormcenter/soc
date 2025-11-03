@@ -65,7 +65,7 @@ kubectl exec -i -n click $podname -- clickhouse-client --multiquery --database=d
 CREATE TABLE IF NOT EXISTS default.kubescape_logs
 ENGINE = MergeTree
 ORDER BY event_time
-PARTITION BY (event_time, hostname)
+PARTITION BY toYYYYMM(toDateTime(event_time))
 AS SELECT     *
 FROM file('/var/lib/clickhouse/user_files/infer.json', 'JSONEachRow')
 SETTINGS schema_inference_make_columns_nullable = 0;
