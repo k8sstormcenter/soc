@@ -387,7 +387,7 @@ customConfig:
         .key, err = to_string(.field1) + to_string(.field2) + to_string(.field3) + to_string(.field4) + to_string(.field5) + to_string(.field6) 
         .md5_hash = to_string(md5(.key))
         .hostname = get_env_var!("NODE_NAME")
-        .event_time = format_timestamp!(now(), format: "%+")
+        .event_time = to_unix_timestamp(now())
         del(.field1)
         del(.field2)
         del(.field3)
@@ -448,7 +448,6 @@ customConfig:
         - kubescape-create_key
       database: default
       table: kubescape_logs
-      skip_unknown_fields: true
       endpoint: "http://hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local:8123"
       auth:
         strategy: "basic"
