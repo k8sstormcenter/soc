@@ -145,7 +145,12 @@ args:
   - "/etc/vector/"
 
 # env -- Set environment variables for Vector containers.
-env: []
+
+env:
+  - name: NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
   # - name: MY_VARIABLE
   #   valueFrom:
   #     secretKeyRef:
@@ -352,19 +357,6 @@ customConfig:
           del(.md5_hash)
           del(.dedup)
 
-    # tetragon_pre:
-    #   type: remap
-    #   inputs:
-    #     - tetragon_logs
-    #   source: |
-    #           . = parse_json!(.message)
-    #           .kprobe0= if exists(.process_kprobe.args[0]) { .process_kprobe.args[0] } else { "empty"  }
-    #           .kprobe1= if exists(.process_kprobe.args[1]) { .process_kprobe.args[1] } else { "empty"  }
-    #           .kprobe2= if exists(.process_kprobe.args[2]) { .process_kprobe.args[2] } else { "empty"  }
-    #           .kprobe3= if exists(.process_kprobe.args[3]) { .process_kprobe.args[3] } else { "empty"  }
-    #           .kprobe4= if exists(.process_kprobe.args[4]) { .process_kprobe.args[4] } else { "empty"  }
-
-
 
     kubescape-nodeagent_pre:
        type: remap
@@ -378,6 +370,7 @@ customConfig:
       inputs:
         - kubescape-nodeagent_pre
       condition: '.BaseRuntimeMetadata != null'
+
 
     kubescape-create_key:
       type: remap
@@ -393,12 +386,15 @@ customConfig:
         .field6 = if exists(.BaseRuntimeMetadata.infectedPID) { .BaseRuntimeMetadata.infectedPID } else { "1" }
         .key, err = to_string(.field1) + to_string(.field2) + to_string(.field3) + to_string(.field4) + to_string(.field5) + to_string(.field6) 
         .md5_hash = to_string(md5(.key))
+        .hostname = get_env_var!("NODE_NAME")
+        .event_time = to_unix_timestamp(now())
         del(.field1)
         del(.field2)
         del(.field3)
         del(.field4)
         del(.field5)
         del(.field6)
+        del(.time)
         del(.key)
 
 
@@ -455,8 +451,8 @@ customConfig:
       endpoint: "http://hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local:8123"
       auth:
         strategy: "basic"
-        user: app
-        password: hyperdx
+        user: otelcollector 
+        password: otelcollectorpass
     tetragon: 
       type: file
       inputs:
@@ -464,18 +460,6 @@ customConfig:
       encoding:
         codec: json
       path: "/tmp/tetragon.json"
-    tetragon_clickhouse:
-      type: clickhouse
-      inputs:
-        - tetragon_pixie
-      database: default
-      table: tetragon_logs
-      endpoint: "http://hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local:8123"
-      auth:
-        strategy: "basic"
-        user: app
-        password: hyperdx
-
 
 
 
