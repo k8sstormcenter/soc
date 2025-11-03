@@ -1,0 +1,10 @@
+
+import px
+
+df = px.DataFrame('kubescape_logs_new', clickhouse_dsn='otelcollector:otelcollectorpass@hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local:9000/default', start_time='-2d')
+df.alert = px.pluck(df.BaseRuntimeMetadata, "alertName")
+df.namespace = px.pluck(df.RuntimeK8sDetails, "podNamespace")
+df.podName = px.pluck(df.RuntimeK8sDetails, "podName")
+df.time_ = df.event_time
+df = df[['time_', 'alert', 'namespace', 'podName']]
+px.display(df)
