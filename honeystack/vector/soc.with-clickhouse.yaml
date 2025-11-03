@@ -387,7 +387,7 @@ customConfig:
         .key, err = to_string(.field1) + to_string(.field2) + to_string(.field3) + to_string(.field4) + to_string(.field5) + to_string(.field6) 
         .md5_hash = to_string(md5(.key))
         .hostname = get_env_var!("NODE_NAME")
-        .event_time = .time
+        .event_time = format_timestamp!(now(), format: "%+")
         del(.field1)
         del(.field2)
         del(.field3)
