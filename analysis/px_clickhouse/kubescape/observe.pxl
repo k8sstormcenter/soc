@@ -5,6 +5,6 @@ df = px.DataFrame('kubescape_logs', clickhouse_dsn='otelcollector:otelcollectorp
 df.alert = df.message
 df.namespace = px.pluck(df.RuntimeK8sDetails, "podNamespace")
 df.podName = px.pluck(df.RuntimeK8sDetails, "podName")
-df.time_ = df.event_time
+df.time_ = px.int64_to_time(df.event_time * 1000000000)
 df = df[['time_', 'alert', 'namespace', 'podName']]
 px.display(df)
