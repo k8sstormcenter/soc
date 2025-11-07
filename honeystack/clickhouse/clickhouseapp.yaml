@@ -1322,6 +1322,7 @@ spec:
     syscalls:
     - accept4
     - access
+    - alarm
     - arch_prctl
     - bind
     - brk
@@ -1330,11 +1331,13 @@ spec:
     - chdir
     - clock_getres
     - clock_gettime
+    - clock_nanosleep
     - clone
     - close
     - close_range
     - connect
     - dup2
+    - dup3
     - epoll_create1
     - epoll_ctl
     - epoll_pwait
@@ -1342,8 +1345,14 @@ spec:
     - execve
     - exit
     - exit_group
+    - faccessat
     - faccessat2
     - fchown
+    - fchdir 
+    - fchownat
+    - fsconfig
+    - fsmount
+    - fsopen 
     - fcntl
     - fork
     - fstat
@@ -1367,11 +1376,15 @@ spec:
     - io_uring_enter
     - io_uring_setup
     - ioctl
+    - keyctl
     - listen
     - lseek
     - madvise
     - membarrier
     - mkdir
+    - mkdirat
+    - mknodat
+    - mount 
     - mmap
     - mprotect
     - mremap
@@ -1379,14 +1392,19 @@ spec:
     - nanosleep
     - newfstatat
     - open
+    - open_tree
     - openat
+    - openat2 
     - pipe2
     - poll
+    - pivot_root
     - prctl
     - pread64
     - prlimit64
     - read
     - readlink
+    - readlinkat
+    - rseq 
     - readv
     - recvfrom
     - recvmsg
@@ -1396,7 +1414,10 @@ spec:
     - sched_getaffinity
     - sched_yield
     - sendto
+    - sendmmsg 
     - set_tid_address
+    - set_robust_list
+    - setsid 
     - setgid
     - setgroups
     - setsockopt
@@ -1406,10 +1427,14 @@ spec:
     - socket
     - socketpair
     - stat
+    - statfs 
     - statx
+    - symlinkat
     - tgkill
     - tkill
     - umask
+    - umount2
+    - unlinkat 
     - uname
     - wait4
     - write
