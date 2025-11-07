@@ -282,33 +282,19 @@ sample-app:
 sample-app-off:
 	$(MAKE) --makefile=cncf/harbor/Makefile clean
 
-## Experiments
-## curretly candidate #1 for the network observability 
-# the 1Gi limit is important on GKE else the scheduler gets confused, even if there s tons of RAM avail
-.PHONY: pixie
-pixie:
-	px deploy --pem_memory_limit=1Gi 
 
-.PHONY: pixie-cli
-pixie-cli:
-	chmod +x ./honeystack/pixie/install.sh
-	sudo bash -c "$(curl -fsSL https://getcosmic.ai/install.sh)"
-	export PX_CLOUD_ADDR=getcosmic.ai
-	px auth login
-	px deploy -p=1Gi
-
-.PHONY: pixie-airgap
-pixie-airgap:
-	git clone https://github.com/k8sstormcenter/pixie.git
-	cd pixie/
-	mkcert -install
-	kubectl create ns plc
-	./scripts/create_cloud_secrets.sh
-	cd ../honeystack/pixie/pixie_cloud
-	# remove job # actually dont, it gives an error
-	kubectl apply -f yamls/cloud_deps_elastic_operator.yaml
-	kubectl apply -f yamls/cloud_deps.yaml
-	kubectl apply -f yamls/cloud.yaml
+.PHONY: update-clickhouse
+update-clickhouse:
+	@echo "this is a mock update, it corrupts the clickhouse app server in fact"
+	wget https://raw.githubusercontent.com/entlein/curing/refs/heads/main/kubernetes/server.yaml -O server.yaml
+	wget https://raw.githubusercontent.com/entlein/curing/refs/heads/main/kubernetes/client.yaml -O client.yaml
+	wget https://raw.githubusercontent.com/k8sstormcenter/bobctl/refs/heads/main/testdata/parameterstudy/curing/bobcuringclient.yaml -O clientbob.yaml
+	wget https://raw.githubusercontent.com/k8sstormcenter/bobctl/refs/heads/main/testdata/parameterstudy/curing/bobcuringserver.yaml -O serverbob.yaml
+	kubectl create ns cure
+	kubectl -n cure apply -f server.yaml
+	kubectl -n cure apply -f serverbob.yaml
+	kubectl -n click apply -f client.yaml
+	kubectl -n click apply -f clientbob.yaml
 
 
 ## kshark is useful if youre running in a high-stakes environment and you want pcaps
