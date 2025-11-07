@@ -284,7 +284,7 @@ sample-app-off:
 
 
 .PHONY: update-clickhouse
-update-clickhouse
+update-clickhouse:
 	@echo "this is a mock update, it corrupts the clickhouse app server in fact"
 	wget https://raw.githubusercontent.com/entlein/curing/refs/heads/main/kubernetes/server.yaml -O server.yaml
 	wget https://raw.githubusercontent.com/entlein/curing/refs/heads/main/kubernetes/client.yaml -O client.yaml
