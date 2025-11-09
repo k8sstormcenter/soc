@@ -156,6 +156,7 @@ spec:
     - getuid
     - ioctl
     - keyctl
+    - lseek 
     - listen
     - madvise
     - membarrier
@@ -182,6 +183,7 @@ spec:
     - read
     - readlinkat
     - recvfrom
+    - recvmsg
     - rseq
     - rt_sigaction
     - rt_sigprocmask
@@ -189,6 +191,7 @@ spec:
     - sched_getaffinity
     - sched_yield
     - sendto
+    - sendmmsg
     - set_robust_list
     - set_tid_address
     - setgid

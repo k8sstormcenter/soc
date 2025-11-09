@@ -194,6 +194,7 @@ spec:
     - open_tree
     - openat
     - openat2
+    - pause
     - pipe2
     - pivot_root
     - prctl

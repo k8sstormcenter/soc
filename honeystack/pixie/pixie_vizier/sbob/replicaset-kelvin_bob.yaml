@@ -255,15 +255,19 @@ spec:
         defaultAction: ""
     syscalls:
     - access
+    - accept
+    - accept4
     - arch_prctl
     - bind
     - brk
+    - bpf
     - capget
     - capset
     - chdir
     - clock_nanosleep
     - clock_gettime
     - clone
+    - clone3
     - close
     - close_range
     - connect
@@ -280,6 +284,7 @@ spec:
     - faccessat
     - faccessat2
     - fchdir
+    - fchmod
     - fchmodat
     - fchown
     - fchownat
@@ -290,6 +295,7 @@ spec:
     - fsopen
     - fstat
     - fstatfs
+    - ftruncate
     - futex
     - getcwd
     - getdents64
@@ -307,12 +313,14 @@ spec:
     - getuid
     - ioctl
     - keyctl
+    - kill
     - listen
     - lseek
     - madvise
     - membarrier
     - mincore
     - mkdirat
+    - mkdir
     - mknodat
     - mmap
     - mount
@@ -324,6 +332,7 @@ spec:
     - open_tree
     - openat
     - openat2
+    - perf_event_open
     - pipe
     - pipe2
     - pivot_root
@@ -332,18 +341,24 @@ spec:
     - pread64
     - prlimit64
     - read
+    - readlink
     - readlinkat
     - recvfrom
     - recvmsg
+    - rename
     - rseq
     - rt_sigaction
     - rt_sigprocmask
     - rt_sigreturn
     - sched_getaffinity
+    - sched_getparam
+    - sched_getscheduler
     - sched_yield
     - sendmmsg
     - sendmsg
+    - sendfile
     - sendto
+    - setns
     - set_robust_list
     - set_tid_address
     - setgid
@@ -359,12 +374,16 @@ spec:
     - statfs
     - statx
     - symlinkat
+    - symlink
+    - sysinfo
     - tgkill
     - tkill
     - umask
     - umount2
     - uname
     - unlinkat
+    - unlink
+    - utimensat
     - wait4
     - write
     - writev
