@@ -713,7 +713,9 @@ spec:
     - close
     - close_range
     - connect
+    - dup
     - dup2
+    - dup3
     - epoll_create1
     - epoll_ctl
     - epoll_pwait
@@ -721,12 +723,20 @@ spec:
     - execve
     - exit
     - exit_group
+    - faccessat 
     - faccessat2
+    - fchdir
+    - fchmod
+    - fchmodat
+    - fchown
+    - fchownat 
     - fcntl
     - fdatasync
     - fchmod
     - fgetxattr
     - fsconfig
+    - fsmount
+    - fsopen 
     - flock
     - fork
     - fstat
@@ -735,6 +745,7 @@ spec:
     - futex
     - get_mempolicy
     - getcwd
+    - getrandom
     - getdents64
     - getegid
     - geteuid
@@ -758,6 +769,9 @@ spec:
     - madvise
     - mkdir
     - mmap
+    - membarrier
+    - mkdirat
+    - mknodat
     - mprotect
     - munmap
     - mount_setattr
@@ -765,9 +779,12 @@ spec:
     - nanosleep
     - newfstatat
     - open
+    - open_tree
     - openat
+    - openat2
     - pipe
     - pipe2
+    - pivot_root
     - poll
     - prctl
     - pread64
@@ -800,10 +817,12 @@ spec:
     - setuid
     - sigaltstack
     - socket
+    - socketpair
     - stat
     - statx
     - statfs
     - symlink
+    - symlinkat
     - sysinfo
     - tgkill
     - timer_create
