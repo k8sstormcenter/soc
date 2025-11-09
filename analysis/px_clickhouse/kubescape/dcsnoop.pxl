@@ -1,0 +1,59 @@
+
+import pxtrace
+import px
+
+# Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/dcsnoop.bt
+
+program = """
+// dcsnoop      Trace directory entry cache (dcache) lookups.
+//              For Linux, uses eBPF.
+//
+// Copyright 2018 Netflix, Inc.
+// Licensed under the Apache License, Version 2.0 (the "License")
+
+#include <linux/fs.h>
+
+// from fs/namei.c:
+struct nameidata {
+        struct path     path;
+        struct qstr     last;
+        // [...]
+};
+
+// comment out this block to avoid showing hits:
+kprobe:lookup_fast,
+kprobe:lookup_fast.constprop.*
+{
+    $nd = (struct nameidata *)arg0;
+    printf(\"time_:%llu pid:%d comm:%s t:%s file:%s\",
+           nsecs, pid, comm, \"R\", str($nd->last.name));
+}
+
+kprobe:d_lookup
+{
+    $name = (struct qstr *)arg1;
+    @fname[tid] = $name->name;
+}
+
+kretprobe:d_lookup
+/@fname[tid]/
+{
+    printf(\"time_:%llu pid:%d comm:%s t:%s file:%s\",
+           nsecs, pid, comm, \"M\", str(@fname[tid]));
+    delete(@fname[tid]);
+}
+"""
+
+
+def dc_snoop_func():
+    table_name = 'dc_snoop_table'
+    pxtrace.UpsertTracepoint('dc_snoop_tracer',
+                             table_name,
+                             program,
+                             pxtrace.kprobe(),
+                             "10m")
+    df = px.DataFrame(table=table_name)
+    df = df[px.contains(df.comm, "client")]
+
+    return df
+px.display(dc_snoop_func())
