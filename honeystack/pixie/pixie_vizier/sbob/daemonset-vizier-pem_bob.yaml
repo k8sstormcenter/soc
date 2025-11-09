@@ -14,6 +14,7 @@ spec:
     - NET_ADMIN
     - PERFMON
     - SYSLOG
+    - SYS_CHROOT
     - SYS_ADMIN
     - SYS_PTRACE
     - SYS_RESOURCE
@@ -288,6 +289,7 @@ spec:
       path: /usr/lib/x86_64-linux-gnu/libunwind.so.8.0.1
     - flags:
       - O_RDONLY
+      - O_CLOEXEC
       path: /usr/local/bin/⋯
     - flags:
       - O_RDONLY
@@ -342,7 +344,9 @@ spec:
       R0006: {}
       R0007: {}
       R0008: {}
-      R0009: {}
+      R0009: 
+        processAllowed:
+        - pem
       R0010: {}
       R0011: {}
       R1000: {}
@@ -365,6 +369,7 @@ spec:
         defaultAction: ""
     syscalls:
     - accept
+    - accept4
     - access
     - arch_prctl
     - bind
@@ -414,6 +419,7 @@ spec:
     - getpid
     - getppid
     - getrandom
+    - getrlimit
     - getsockname
     - getsockopt
     - gettid
@@ -422,6 +428,7 @@ spec:
     - keyctl
     - kill
     - lseek
+    - listen
     - madvise
     - membarrier
     - mincore
@@ -450,6 +457,7 @@ spec:
     - readlink
     - readlinkat
     - recvfrom
+    - recvmsg
     - rename
     - rseq
     - rt_sigaction
@@ -471,6 +479,7 @@ spec:
     - setsid
     - setsockopt
     - setuid
+    - shutdown
     - sigaltstack
     - socket
     - socketpair

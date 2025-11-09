@@ -33,6 +33,7 @@ spec:
       path: /dev/urandom
     - flags:
       - O_RDONLY
+      - O_CLOEXEC
       path: /etc/hosts
     - flags:
       - O_RDONLY
@@ -408,6 +409,8 @@ spec:
     - flags:
       - O_TRUNC
       - O_LARGEFILE
+      - O_RDONLY
+      - O_CLOEXEC
       - O_WRONLY
       - O_CREAT
       path: /etc/hosts
@@ -728,13 +731,16 @@ spec:
       spec:
         defaultAction: ""
     syscalls:
+    - accept 
     - arch_prctl
     - bind
+    - bpf 
     - brk
     - capget
     - capset
     - chdir
     - clone
+    - clone3
     - close
     - close_range
     - connect
@@ -746,6 +752,8 @@ spec:
     - exit_group
     - faccessat2
     - fchown
+    - fchmod 
+    - ftruncate
     - fcntl
     - fork
     - fstat
@@ -764,9 +772,11 @@ spec:
     - getsockopt
     - gettid
     - getuid
+    - kill
     - ioctl
     - madvise
     - membarrier
+    - mkdir 
     - mmap
     - mprotect
     - munmap
@@ -774,17 +784,23 @@ spec:
     - newfstatat
     - open
     - openat
+    - perf_event_open
     - pipe
     - pipe2
     - poll
     - prctl
     - read
+    - readlink
+    - rename
     - recvfrom
     - rt_sigaction
     - rt_sigprocmask
     - rt_sigreturn
     - sched_yield
+    - sched_getparam
+    - sched_getscheduler
     - sendto
+    - sendfile
     - set_tid_address
     - setgid
     - setgroups
@@ -792,9 +808,14 @@ spec:
     - setuid
     - socket
     - socketpair
+    - symlink
+    - symlinkat
+    - sysinfo
     - stat
     - tgkill
     - tkill
+    - unlink 
+    - utimensat
     - wait4
     - write
     - writev

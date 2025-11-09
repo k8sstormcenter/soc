@@ -38,6 +38,7 @@ spec:
     - flags:
       - O_RDONLY
       - O_CLOEXEC
+      - O_DIRECTORY
       path: /etc/ssl/certs
     - flags:
       - O_RDONLY
