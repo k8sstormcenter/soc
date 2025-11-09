@@ -2,7 +2,7 @@
 kubectl create ns olm
 kubectl create ns px-operator
 kubectl create ns pl
-for file in ./honeystack/pixie/pixie_vizier/*_bob.yaml; do
+for file in ./honeystack/pixie/pixie_vizier/sbob/*_bob.yaml; do
     kubectl apply -f $file;
 done
 
