@@ -1350,6 +1350,8 @@ spec:
     - fchown
     - fchdir 
     - fchownat
+    - fchmod
+    - fchmodat
     - fsconfig
     - fsmount
     - fsopen 
