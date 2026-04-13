@@ -75,6 +75,36 @@ customConfig:
         del(.time)
         del(.key)
 
+    # Map kubescape fields to ClickHouse schema columns
+    kubescape_to_clickhouse:
+      type: remap
+      inputs:
+        - kubescape_enrich
+      source: |
+        raw = encode_json(.)
+        out = {}
+        out.timestamp = string(.BaseRuntimeMetadata.timestamp) ?? ""
+        out.rule_id = string(.RuleID) ?? ""
+        out.alert_name = string(.BaseRuntimeMetadata.alertName) ?? ""
+        out.severity, err = to_int(.BaseRuntimeMetadata.severity)
+        if err != null { out.severity = 0 }
+        out.unique_id = string(.BaseRuntimeMetadata.uniqueID) ?? ""
+        out.cluster_name = string(.RuntimeK8sDetails.clusterName) ?? ""
+        out.namespace = string(.RuntimeK8sDetails.namespace) ?? ""
+        out.pod_name = string(.RuntimeK8sDetails.podName) ?? ""
+        out.container_name = string(.RuntimeK8sDetails.containerName) ?? ""
+        out.container_id = string(.RuntimeK8sDetails.containerID) ?? ""
+        out.workload_name = string(.RuntimeK8sDetails.workloadName) ?? ""
+        out.workload_kind = string(.RuntimeK8sDetails.workloadKind) ?? ""
+        out.image = string(.RuntimeK8sDetails.image) ?? ""
+        out.infected_pid, err = to_int(.BaseRuntimeMetadata.infectedPID)
+        if err != null { out.infected_pid = 0 }
+        out.process_name = string(.RuntimeProcessDetails.processTree.comm) ?? ""
+        out.process_cmdline = string(.RuntimeProcessDetails.processTree.cmdline) ?? ""
+        out.message = string(.BaseRuntimeMetadata.message) ?? string(.msg) ?? ""
+        out.raw_event = raw
+        . = out
+
   sinks:
     # File sink for debugging (remove in production)
     kubescape_debug:
@@ -89,7 +119,7 @@ customConfig:
     kubescape_clickhouse:
       type: clickhouse
       inputs:
-        - kubescape_enrich
+        - kubescape_to_clickhouse
       database: forensic_db
       table: alerts
       endpoint: "http://clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:8123"

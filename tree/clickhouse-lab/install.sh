@@ -104,16 +104,28 @@ for i in $(seq 1 60); do
   sleep 5
 done
 
-# Wait for CH to accept connections
-log "Waiting for ClickHouse to accept connections..."
-sleep 10
-
-# ---------- 4. Apply schema ----------
-log "Applying forensic database schema..."
-
+# Wait for CH cluster to be queryable
 CH_POD=$(kubectl get pods -n "$NAMESPACE" \
   -l "clickhouse.altinity.com/chi=$CHI_NAME" \
   -o jsonpath='{.items[0].metadata.name}')
+
+log "Waiting for ClickHouse cluster to accept queries..."
+for i in $(seq 1 60); do
+  CLUSTER_OK=$(kubectl exec -n "$NAMESPACE" "$CH_POD" -- \
+    clickhouse-client -q "SELECT count() FROM system.clusters WHERE cluster = 'soc-cluster'" 2>/dev/null || echo "0")
+  if [[ "$CLUSTER_OK" -ge 1 ]]; then
+    log "Cluster 'soc-cluster' is registered."
+    break
+  fi
+  if [[ "$i" -eq 30 ]]; then
+    log "ERROR: Cluster 'soc-cluster' not registered after 120s."
+    exit 1
+  fi
+  sleep 2
+done
+
+# ---------- 4. Apply schema ----------
+log "Applying forensic database schema..."
 
 kubectl exec -i -n "$NAMESPACE" "$CH_POD" -- \
   clickhouse-client --multiquery < "$SCRIPT_DIR/schema.sql"
