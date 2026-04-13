@@ -110,15 +110,17 @@ CH_POD=$(kubectl get pods -n "$NAMESPACE" \
   -o jsonpath='{.items[0].metadata.name}')
 
 log "Waiting for ClickHouse cluster to accept queries..."
-for i in $(seq 1 60); do
+for i in $(seq 1 90); do
+  CLUSTER_OK=""
   CLUSTER_OK=$(kubectl exec -n "$NAMESPACE" "$CH_POD" -- \
-    clickhouse-client -q "SELECT count() FROM system.clusters WHERE cluster = 'soc-cluster'" 2>/dev/null || echo "0")
-  if [[ "$CLUSTER_OK" -ge 1 ]]; then
+    clickhouse-client -q "SELECT count() FROM system.clusters WHERE cluster = 'soc-cluster'" 2>/dev/null) || true
+  CLUSTER_OK=$(echo "$CLUSTER_OK" | tr -d '[:space:]')
+  if [[ -n "$CLUSTER_OK" && "$CLUSTER_OK" -ge 1 ]] 2>/dev/null; then
     log "Cluster 'soc-cluster' is registered."
     break
   fi
-  if [[ "$i" -eq 30 ]]; then
-    log "ERROR: Cluster 'soc-cluster' not registered after 120s."
+  if [[ "$i" -eq 90 ]]; then
+    log "ERROR: Cluster 'soc-cluster' not registered after 180s."
     exit 1
   fi
   sleep 2
