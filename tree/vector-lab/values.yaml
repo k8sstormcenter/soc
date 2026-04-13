@@ -1,0 +1,104 @@
+# Vector Helm values for iximiuz lab — kubescape node-agent → ClickHouse pipeline
+# Deploy: helm install vector vector/vector -n honey -f values.yaml
+
+role: "Agent"
+
+image:
+  repository: timberio/vector
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+tolerations:
+  - operator: Exists
+
+env:
+  - name: NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
+customConfig:
+  data_dir: /vector-data-dir
+  api:
+    enabled: true
+    address: 127.0.0.1:8686
+    playground: false
+
+  sources:
+    kubescape_nodeagent_logs:
+      type: kubernetes_logs
+      extra_label_selector: "app=node-agent"
+
+  transforms:
+    kubescape_parse:
+      type: remap
+      inputs:
+        - kubescape_nodeagent_logs
+      source: |
+        . = parse_json!(.message)
+
+    kubescape_filter:
+      type: filter
+      inputs:
+        - kubescape_parse
+      condition: '.BaseRuntimeMetadata != null'
+
+    kubescape_enrich:
+      type: remap
+      inputs:
+        - kubescape_filter
+      source: |
+        .CloudMetadata = "empty"
+        .field1 = .BaseRuntimeMetadata.alertName
+        .field2 = .RuntimeK8sDetails.containerID
+        .field3 = .RuntimeK8sDetails.podName
+        .field4 = if exists(.BaseRuntimeMetadata.arguments.capability) { .BaseRuntimeMetadata.arguments.capability } else { if exists(.BaseRuntimeMetadata.arguments.path) { .BaseRuntimeMetadata.arguments.path } else { if exists(.BaseRuntimeMetadata.arguments.exec) { .BaseRuntimeMetadata.arguments.exec } else { "1" } } }
+        .field5 = if exists(.RuntimeProcessDetails.processTree.cmdline) { .RuntimeProcessDetails.processTree.cmdline} else {""}
+        .field6 = if exists(.BaseRuntimeMetadata.infectedPID) { .BaseRuntimeMetadata.infectedPID } else { "1" }
+        .key, err = to_string(.field1) + to_string(.field2) + to_string(.field3) + to_string(.field4) + to_string(.field5) + to_string(.field6)
+        .md5_hash = to_string(md5(.key))
+        .hostname = get_env_var!("NODE_NAME")
+        .event_time = to_unix_timestamp(now())
+        del(.field1)
+        del(.field2)
+        del(.field3)
+        del(.field4)
+        del(.field5)
+        del(.field6)
+        del(.time)
+        del(.key)
+
+  sinks:
+    # File sink for debugging (remove in production)
+    kubescape_debug:
+      type: file
+      inputs:
+        - kubescape_enrich
+      encoding:
+        codec: json
+      path: "/tmp/kubescape.json"
+
+    # ClickHouse sink — forensic database
+    kubescape_clickhouse:
+      type: clickhouse
+      inputs:
+        - kubescape_enrich
+      database: forensic_db
+      table: alerts
+      endpoint: "http://clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:8123"
+      skip_unknown_fields: true
+      date_time_best_effort: true
+      auth:
+        strategy: "basic"
+        user: ingest_writer
+        password: changeme-ingest
+      batch:
+        max_bytes: 5000000
+        timeout_secs: 2
