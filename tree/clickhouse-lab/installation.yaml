@@ -13,12 +13,12 @@ spec:
     clusters:
     - name: soc-cluster
       layout:
-        shardsCount: 2
+        shardsCount: 1
         replicasCount: 1
 
     settings:
       logger/level: information
-      background_pool_size: "16"
+      background_pool_size: "4"
       query_log/flush_interval_milliseconds: "5000"
 
     profiles:
@@ -65,11 +65,11 @@ spec:
           image: clickhouse/clickhouse-server:24.3
           resources:
             requests:
-              memory: 512Mi
-              cpu: 250m
+              memory: 256Mi
+              cpu: 100m
             limits:
-              memory: 1536Mi
-              cpu: "1"
+              memory: 512Mi
+              cpu: 500m
 
     volumeClaimTemplates:
     - name: data-volume
