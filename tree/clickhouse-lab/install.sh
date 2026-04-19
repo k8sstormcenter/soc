@@ -37,11 +37,10 @@ if ! $SKIP_OPERATOR; then
   if helm status clickhouse-operator -n "$NAMESPACE" &>/dev/null; then
     log "Operator already installed, skipping."
   else
-    helm install clickhouse-operator altinity/altinity-clickhouse-operator \
+    helm upgrade --install clickhouse-operator altinity/altinity-clickhouse-operator \
       --version 0.26.0 \
       --namespace "$NAMESPACE" \
-      --create-namespace \
-      --wait --timeout 120s
+      --create-namespace
   fi
   log "Operator ready."
 fi
@@ -80,28 +79,10 @@ for i in $(seq 1 60); do
     -l "clickhouse.altinity.com/chi=$CHI_NAME" \
     --no-headers 2>/dev/null | grep -c Running || true)
 
-  # Early crash detection
-  CRASH=$(kubectl get pods -n "$NAMESPACE" \
-    -l "clickhouse.altinity.com/chi=$CHI_NAME" \
-    --no-headers 2>/dev/null | grep -c CrashLoopBackOff || true)
-  if [[ "$CRASH" -gt 0 && "$i" -gt 6 ]]; then
-    log "ERROR: ClickHouse pods are crash-looping."
-    kubectl logs -n "$NAMESPACE" \
-      -l "clickhouse.altinity.com/chi=$CHI_NAME" \
-      --tail=5 2>&1 | grep -i "error\|exception" || true
-    exit 1
-  fi
-
-  if [[ "$TOTAL" -ge 2 && "$READY" -ge 2 ]]; then
-    log "All $READY ClickHouse pods are running."
+  if [[ "$TOTAL" == "$READY" ]]; then
+    echo "All $READY ClickHouse pods are running."
     break
   fi
-  if [[ "$i" -eq 60 ]]; then
-    log "ERROR: ClickHouse pods did not start within 5 min."
-    kubectl get pods -n "$NAMESPACE"
-    exit 1
-  fi
-  sleep 5
 done
 
 # Wait for CH cluster to be queryable
