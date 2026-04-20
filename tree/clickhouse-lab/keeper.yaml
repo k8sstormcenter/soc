@@ -1,0 +1,36 @@
+apiVersion: clickhouse-keeper.altinity.com/v1
+kind: ClickHouseKeeperInstallation
+metadata:
+  name: forensic-keeper
+  namespace: clickhouse
+spec:
+  configuration:
+    clusters:
+    - name: keeper
+      layout:
+        replicasCount: 1
+    settings:
+      logger/level: information
+      tcp_port: "2181"
+  templates:
+    podTemplates:
+    - name: default
+      spec:
+        containers:
+        - name: clickhouse-keeper
+          image: clickhouse/clickhouse-keeper:24.3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+    volumeClaimTemplates:
+    - name: default
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 512Mi
