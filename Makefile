@@ -1,6 +1,6 @@
 NAME ?= sovereignsoc
 CLUSTER_NAME := $(NAME)
-HELM = $(shell which helm)
+HELM := $(shell which helm)
 KUBESCAPE_CHART_VER ?= 1.30.2
 
 CURRENT_CONTEXT := $(shell kubectl config current-context)
