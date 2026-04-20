@@ -1,4 +1,4 @@
-# Vector Helm values for iximiuz lab — kubescape node-agent → ClickHouse pipeline
+# Vector Helm values for iximiuz lab — kubescape node-agent → ClickHouse
 # Deploy: helm install vector vector/vector -n honey -f values.yaml
 
 role: "Agent"
@@ -56,57 +56,11 @@ customConfig:
         - kubescape_filter
       source: |
         .CloudMetadata = "empty"
-        .field1 = .BaseRuntimeMetadata.alertName
-        .field2 = .RuntimeK8sDetails.containerID
-        .field3 = .RuntimeK8sDetails.podName
-        .field4 = if exists(.BaseRuntimeMetadata.arguments.capability) { .BaseRuntimeMetadata.arguments.capability } else { if exists(.BaseRuntimeMetadata.arguments.path) { .BaseRuntimeMetadata.arguments.path } else { if exists(.BaseRuntimeMetadata.arguments.exec) { .BaseRuntimeMetadata.arguments.exec } else { "1" } } }
-        .field5 = if exists(.RuntimeProcessDetails.processTree.cmdline) { .RuntimeProcessDetails.processTree.cmdline} else {""}
-        .field6 = if exists(.BaseRuntimeMetadata.infectedPID) { .BaseRuntimeMetadata.infectedPID } else { "1" }
-        .key, err = to_string(.field1) + to_string(.field2) + to_string(.field3) + to_string(.field4) + to_string(.field5) + to_string(.field6)
-        .md5_hash = to_string(md5(.key))
         .hostname = get_env_var!("NODE_NAME")
         .event_time = to_unix_timestamp(now())
-        del(.field1)
-        del(.field2)
-        del(.field3)
-        del(.field4)
-        del(.field5)
-        del(.field6)
         del(.time)
-        del(.key)
-
-    # Map kubescape fields to ClickHouse schema columns
-    kubescape_to_clickhouse:
-      type: remap
-      inputs:
-        - kubescape_enrich
-      source: |
-        raw = encode_json(.)
-        out = {}
-        out.timestamp = string(.BaseRuntimeMetadata.timestamp) ?? ""
-        out.rule_id = string(.RuleID) ?? ""
-        out.alert_name = string(.BaseRuntimeMetadata.alertName) ?? ""
-        out.severity, err = to_int(.BaseRuntimeMetadata.severity)
-        if err != null { out.severity = 0 }
-        out.unique_id = string(.BaseRuntimeMetadata.uniqueID) ?? ""
-        out.cluster_name = string(.RuntimeK8sDetails.clusterName) ?? ""
-        out.namespace = string(.RuntimeK8sDetails.namespace) ?? ""
-        out.pod_name = string(.RuntimeK8sDetails.podName) ?? ""
-        out.container_name = string(.RuntimeK8sDetails.containerName) ?? ""
-        out.container_id = string(.RuntimeK8sDetails.containerID) ?? ""
-        out.workload_name = string(.RuntimeK8sDetails.workloadName) ?? ""
-        out.workload_kind = string(.RuntimeK8sDetails.workloadKind) ?? ""
-        out.image = string(.RuntimeK8sDetails.image) ?? ""
-        out.infected_pid, err = to_int(.BaseRuntimeMetadata.infectedPID)
-        if err != null { out.infected_pid = 0 }
-        out.process_name = string(.RuntimeProcessDetails.processTree.comm) ?? ""
-        out.process_cmdline = string(.RuntimeProcessDetails.processTree.cmdline) ?? ""
-        out.message = string(.BaseRuntimeMetadata.message) ?? string(.msg) ?? ""
-        out.raw_event = raw
-        . = out
 
   sinks:
-    # File sink for debugging (remove in production)
     kubescape_debug:
       type: file
       inputs:
@@ -115,13 +69,12 @@ customConfig:
         codec: json
       path: "/tmp/kubescape.json"
 
-    # ClickHouse sink — forensic database
     kubescape_clickhouse:
       type: clickhouse
       inputs:
-        - kubescape_to_clickhouse
+        - kubescape_enrich
       database: forensic_db
-      table: alerts
+      table: kubescape_logs
       endpoint: "http://clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:8123"
       skip_unknown_fields: true
       date_time_best_effort: true

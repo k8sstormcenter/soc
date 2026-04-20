@@ -1,13 +1,9 @@
 import px
 
-df = px.DataFrame(table="kubescape.json")
-
-# Extract podNamespace and podName from the Runtimek8sDetails field
-df.alert=px.pluck(df.message,"message")
+df = px.DataFrame('kubescape_logs', clickhouse_dsn='forensic_analyst:changeme-analyst@clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:9000/forensic_db', start_time='-2d')
+df.alert = df.message
 df.namespace = px.pluck(df.RuntimeK8sDetails, "podNamespace")
 df.podName = px.pluck(df.RuntimeK8sDetails, "podName")
-df.timestamp= px.pluck(df.event, "timestamp")
-# Select only the desired columns
-df = df['message','podName','namespace', 'timestamp']
-
+df.time_ = px.int64_to_time(df.event_time * 1000000000)
+df = df[['time_', 'alert', 'namespace', 'podName']]
 px.display(df, "kubescape_pods")
