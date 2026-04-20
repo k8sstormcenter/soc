@@ -1,7 +1,7 @@
 
 import px
 
-df = px.DataFrame('kubescape_logs', clickhouse_dsn='otelcollector:otelcollectorpass@hyperdx-hdx-oss-v2-clickhouse.click.svc.cluster.local:9000/default', start_time='-2d')
+df = px.DataFrame('kubescape_logs', clickhouse_dsn='forensic_analyst:changeme-analyst@clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:9000/forensic_db', start_time='-2d')
 df.alert = df.message
 df.namespace = px.pluck(df.RuntimeK8sDetails, "podNamespace")
 df.podName = px.pluck(df.RuntimeK8sDetails, "podName")
