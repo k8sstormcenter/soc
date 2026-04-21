@@ -20,6 +20,7 @@ spec:
       logger/level: information
       background_pool_size: "16"
       query_log/flush_interval_milliseconds: "5000"
+      skip_check_for_incorrect_settings: "1"
 
     profiles:
       # Default profile: user-level session settings

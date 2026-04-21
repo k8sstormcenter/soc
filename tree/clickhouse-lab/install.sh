@@ -27,14 +27,25 @@ for i in $(seq 1 40); do
   sleep 3
 done
 
-# ClickHouse
+# ClickHouse — apply and wait, with crash-loop recovery (stale PVC configs)
 kubectl apply -f "$SCRIPT_DIR/installation.yaml"
+CH_OK=false
 for i in $(seq 1 60); do
   TOTAL=$(kubectl get pods -n "$NS" -l "clickhouse.altinity.com/chi=$CHI" --no-headers 2>/dev/null | wc -l)
   READY=$(kubectl get pods -n "$NS" -l "clickhouse.altinity.com/chi=$CHI" --no-headers 2>/dev/null | grep -c Running || true)
-  [[ "$TOTAL" -gt 0 && "$TOTAL" == "$READY" ]] && break
+  CRASH=$(kubectl get pods -n "$NS" -l "clickhouse.altinity.com/chi=$CHI" --no-headers 2>/dev/null | grep -c CrashLoopBackOff || true)
+  if [[ "$TOTAL" -gt 0 && "$TOTAL" == "$READY" ]]; then CH_OK=true; break; fi
+  # If crash-looping (e.g. stale config checksum on PVC), wipe and retry once
+  if [[ "$CRASH" -gt 0 && "$i" -gt 8 ]]; then
+    echo "CH crash-loop detected — wiping CHI + PVCs for clean start..."
+    kubectl delete chi "$CHI" -n "$NS" --wait 2>/dev/null || true
+    kubectl delete pvc -n "$NS" -l "clickhouse.altinity.com/chi=$CHI" --wait 2>/dev/null || true
+    sleep 5
+    kubectl apply -f "$SCRIPT_DIR/installation.yaml"
+  fi
   sleep 5
 done
+$CH_OK || { echo "ClickHouse failed to start"; exit 1; }
 CH_POD=$(kubectl get pods -n "$NS" -l "clickhouse.altinity.com/chi=$CHI" -o jsonpath='{.items[0].metadata.name}')
 for i in $(seq 1 90); do
   R=$(kubectl exec -n "$NS" "$CH_POD" -- clickhouse-client -q "SELECT count() FROM system.clusters WHERE cluster='soc-cluster'" 2>/dev/null | tr -d '[:space:]') || true

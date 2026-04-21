@@ -1,0 +1,6 @@
+**/.git
+**/node_modules
+pixie/pixie/bazel-*
+pixie/pixie/docs
+pixie/pixie/demos
+soc/analysis/adaptive_export/adaptive-export
