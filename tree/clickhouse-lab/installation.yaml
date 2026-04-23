@@ -31,11 +31,20 @@ spec:
       forensic_analyst/readonly: "2"
       forensic_analyst/allow_ddl: "0"
 
-      # Ingest: INSERT allowed, no DELETE/ALTER/DDL
+      # Ingest: INSERT allowed, no DELETE/ALTER/DDL.
+      # Async insert: CH accumulates rows in RAM and flushes in bulk,
+      # giving native-TCP-like throughput from vector's HTTP sink.
+      # Moved here from the vector endpoint URL (?async_insert=1&…)
+      # because CH 24.8 parses query-string bool settings strictly,
+      # and vector's sink appends its own ?query=… — the two collide
+      # and throw DB::Exception code 467 "Cannot parse bool".
       ingest_service/readonly: "0"
       ingest_service/allow_ddl: "0"
       ingest_service/allow_experimental_lightweight_delete: "0"
       ingest_service/allow_nondeterministic_mutations: "0"
+      ingest_service/async_insert: "1"
+      ingest_service/async_insert_max_data_size: "10485760"
+      ingest_service/async_insert_busy_timeout_ms: "200"
 
     users:
       # Analyst user: SELECT only
@@ -62,14 +71,18 @@ spec:
       spec:
         containers:
         - name: clickhouse
-          image: clickhouse/clickhouse-server:24.3
+          # Pinned to 24.8 (LTS) instead of the floating :24.3 tag. The
+          # :24.3 digest on Docker Hub has a known binary self-check bug
+          # on kernel 6.1: restarts fail with exit code 246
+          # (CHECKSUM_DOESNT_MATCH). 24.8 handles it.
+          image: clickhouse/clickhouse-server:24.8
           resources:
             requests:
-              memory: 256Mi
-              cpu: 100m
-            limits:
               memory: 512Mi
-              cpu: 500m
+              cpu: 200m
+            limits:
+              memory: 2Gi
+              cpu: 1000m
 
     volumeClaimTemplates:
     - name: data-volume
