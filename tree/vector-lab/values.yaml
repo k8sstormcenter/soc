@@ -55,7 +55,12 @@ customConfig:
       source: |
         .CloudMetadata = "empty"
         .hostname = get_env_var!("NODE_NAME")
-        .event_time = to_unix_timestamp(now())
+        ts, err = parse_timestamp(.BaseRuntimeMetadata.timestamp, "%+")
+        if err == null {
+          .event_time = to_unix_timestamp(ts)
+        } else {
+          .event_time = to_unix_timestamp(now())
+        }
         del(.time)
 
   sinks:
