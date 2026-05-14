@@ -72,18 +72,14 @@ spec:
       spec:
         containers:
         - name: clickhouse
-          # Pinned to 24.8 (LTS) instead of the floating :24.3 tag. The
-          # :24.3 digest on Docker Hub has a known binary self-check bug
-          # on kernel 6.1: restarts fail with exit code 246
-          # (CHECKSUM_DOESNT_MATCH). 24.8 handles it.
           image: clickhouse/clickhouse-server:24.8
           resources:
             requests:
-              memory: 512Mi
-              cpu: 200m
+              memory: 4Gi
+              cpu: 2
             limits:
-              memory: 2Gi
-              cpu: 1000m
+              memory: 16Gi
+              cpu: 8
 
     volumeClaimTemplates:
     - name: data-volume
