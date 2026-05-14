@@ -29,8 +29,6 @@ customConfig:
   api:
     enabled: true
     address: 127.0.0.1:8686
-    playground: false
-
   sources:
     kubescape_nodeagent_logs:
       type: kubernetes_logs
