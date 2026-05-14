@@ -63,14 +63,14 @@ spec:
       spec:
         containers:
         - name: clickhouse
-          image: clickhouse/clickhouse-server:24.3
+          image: clickhouse/clickhouse-server:24.8
           resources:
             requests:
-              memory: 256Mi
-              cpu: 100m
+              memory: 4Gi
+              cpu: 2
             limits:
-              memory: 512Mi
-              cpu: 500m
+              memory: 16Gi
+              cpu: 8
 
     volumeClaimTemplates:
     - name: data-volume
