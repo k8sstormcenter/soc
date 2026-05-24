@@ -21,7 +21,7 @@ RULES=${1:?usage: $0 <default-rules.yaml>}
 DIR=$(cd "$(dirname "$0")" && pwd)
 VALUES=$DIR/values.yaml
 
-[[ -r $RULES  ]] || { echo "FATAL: rules file not readable: $RULES" >&2; exit 1; }
+[[ -f $RULES  ]] || { echo "FATAL: rules file not found or not a regular file: $RULES" >&2; exit 1; }
 [[ -f $VALUES ]] || { echo "FATAL: values.yaml not at $VALUES" >&2; exit 1; }
 command -v python3 >/dev/null || { echo "FATAL: python3 not found" >&2; exit 1; }
 python3 -c 'import yaml' 2>/dev/null || { echo "FATAL: PyYAML missing — apt install python3-yaml" >&2; exit 1; }
@@ -60,7 +60,8 @@ new = re.sub(
 if new == src:
     sys.stderr.write("FATAL: mitre_map block not found in values.yaml; edit it manually first.\n")
     sys.exit(1)
-open(path, 'w').write(new)
+with open(path, 'w') as f:
+    f.write(new)
 PY
 
 echo "rewrote $VALUES (backup: $VALUES.bak-*)"
