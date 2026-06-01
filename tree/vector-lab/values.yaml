@@ -61,6 +61,52 @@ customConfig:
         } else {
           .event_time = to_unix_timestamp(now())
         }
+        # MITRE enrichment: node-agent's BaseRuntimeAlert struct (armoapi-go)
+        # does not include mitreTactic / mitreTechnique fields, so they are
+        # absent from the alert payload even though they are defined on the
+        # Rule. Inject them here from a static map (regenerate with
+        # ./build-values.sh <path-to-default-rules.yaml> when rules change).
+        mitre_map = {
+          "R0001": {"tactic": "TA0002", "technique": "T1059"},
+          "R0002": {"tactic": "TA0009", "technique": "T1005"},
+          "R0003": {"tactic": "TA0002", "technique": "T1059"},
+          "R0004": {"tactic": "TA0002", "technique": "T1059"},
+          "R0005": {"tactic": "TA0011", "technique": "T1071.004"},
+          "R0006": {"tactic": "TA0006", "technique": "T1528"},
+          "R0007": {"tactic": "TA0008", "technique": "T1210"},
+          "R0008": {"tactic": "TA0006", "technique": "T1056.001"},
+          "R0009": {"tactic": "TA0011", "technique": "T1095"},
+          "R0010": {"tactic": "TA0006", "technique": "T1005"},
+          "R0011": {"tactic": "TA0010", "technique": "T1041"},
+          "R0012": {"tactic": "TA0005", "technique": "T1564"},
+          "R0040": {"tactic": "TA0002", "technique": "T1059"},
+          "R0041": {"tactic": "TA0011", "technique": "T1071"},
+          "R0042": {"tactic": "TA0005", "technique": "T1564"},
+          "R0043": {"tactic": "TA0001", "technique": "T1190"},
+          "R1000": {"tactic": "TA0002", "technique": "T1059"},
+          "R1001": {"tactic": "TA0005", "technique": "T1574"},
+          "R1002": {"tactic": "TA0008", "technique": "T1021"},
+          "R1003": {"tactic": "TA0005", "technique": "T1620"},
+          "R1004": {"tactic": "TA0011", "technique": "T1090"},
+          "R1005": {"tactic": "TA0005", "technique": "T1055"},
+          "R1006": {"tactic": "TA0004", "technique": "T1611"},
+          "R1007": {"tactic": "TA0040", "technique": "T1496"},
+          "R1008": {"tactic": "TA0011", "technique": "T1071.004"},
+          "R1009": {"tactic": "TA0011", "technique": "T1071"},
+          "R1010": {"tactic": "TA0006", "technique": "T1005"},
+          "R1011": {"tactic": "TA0005", "technique": "T1574.006"},
+          "R1012": {"tactic": "TA0006", "technique": "T1005"},
+          "R1015": {"tactic": "TA0005", "technique": "T1622"},
+          "R1016": {"tactic": "TA0005", "technique": "T1565"},
+          "R1030": {"tactic": "TA0002", "technique": "T1218"},
+          "R1031": {"tactic": "TA0002", "technique": "T1609"}
+        }
+        rule_id = .RuleID || ""
+        m = get(mitre_map, [rule_id]) ?? null
+        if m != null {
+          .BaseRuntimeMetadata.mitreTactic = m.tactic
+          .BaseRuntimeMetadata.mitreTechnique = m.technique
+        }
         del(.time)
 
   sinks:
