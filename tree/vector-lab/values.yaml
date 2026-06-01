@@ -23,6 +23,10 @@ env:
     valueFrom:
       fieldRef:
         fieldPath: spec.nodeName
+  - name: HOST_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
 
 customConfig:
   data_dir: /vector-data-dir
@@ -134,3 +138,18 @@ customConfig:
       batch:
         max_bytes: 5000000
         timeout_secs: 2
+
+    # S2: same enriched stream, node-local to the dx-daemon (DaemonSet on this
+    # node). HOST_IP is injected from status.hostIP; dx-daemon binds hostPort.
+    dx_daemon:
+      type: http
+      inputs:
+        - kubescape_enrich
+      uri: "http://${HOST_IP}:9099/findings"
+      method: post
+      encoding:
+        codec: json
+      batch:
+        max_events: 1
+      request:
+        retry_attempts: 3
