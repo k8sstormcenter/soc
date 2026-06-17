@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS forensic_db.kubescape_logs (
     RuntimeK8sDetails     String,
     RuntimeProcessDetails String,
     event                 String,
-    event_time            UInt64,
+    event_time            UInt64,   -- unix epoch NANOSECONDS (Vector kubescape_enrich emits ns)
     hostname              String,
     level                 String DEFAULT '',
     message               String DEFAULT '',
@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS forensic_db.kubescape_logs (
     anomaly_hash          String DEFAULT ''
 ) ENGINE = MergeTree()
   ORDER BY (event_time, hostname)
-  PARTITION BY toYYYYMM(toDateTime(event_time))
-  TTL toDateTime(event_time) + INTERVAL 30 DAY DELETE
+  -- event_time is unix-epoch NANOSECONDS; convert with fromUnixTimestamp64Nano
+  -- (plain toDateTime would read ns as seconds → year ~58e9 → broken partitions/TTL).
+  PARTITION BY toYYYYMM(fromUnixTimestamp64Nano(event_time))
+  TTL fromUnixTimestamp64Nano(event_time) + INTERVAL 30 DAY DELETE
   SETTINGS index_granularity = 8192;
