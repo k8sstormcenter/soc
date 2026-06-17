@@ -76,6 +76,9 @@ CREATE TABLE IF NOT EXISTS forensic_db.kubescape_logs (
   ORDER BY (event_time, hostname)
   -- event_time is unix-epoch NANOSECONDS; convert with fromUnixTimestamp64Nano
   -- (plain toDateTime would read ns as seconds → year ~58e9 → broken partitions/TTL).
+  -- TTL must wrap in toDateTime(): fromUnixTimestamp64Nano returns DateTime64(9),
+  -- which ClickHouse rejects in a TTL expression (BAD_TTL_EXPRESSION). toYYYYMM
+  -- accepts DateTime64, so PARTITION BY needs no wrapper.
   PARTITION BY toYYYYMM(fromUnixTimestamp64Nano(event_time))
-  TTL fromUnixTimestamp64Nano(event_time) + INTERVAL 30 DAY DELETE
+  TTL toDateTime(fromUnixTimestamp64Nano(event_time)) + INTERVAL 30 DAY DELETE
   SETTINGS index_granularity = 8192;
