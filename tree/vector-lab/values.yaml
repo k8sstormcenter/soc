@@ -23,6 +23,10 @@ env:
     valueFrom:
       fieldRef:
         fieldPath: spec.nodeName
+  - name: HOST_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
 
 customConfig:
   data_dir: /vector-data-dir
@@ -56,10 +60,15 @@ customConfig:
         .CloudMetadata = "empty"
         .hostname = get_env_var!("NODE_NAME")
         ts, err = parse_timestamp(.BaseRuntimeMetadata.timestamp, "%+")
+        # Transport the ORIGINAL kubescape timestamp at NANOSECOND resolution.
+        # Truncating to seconds (the to_unix_timestamp default) collapses the AE
+        # trigger watermark to 1s granularity and loses sub-second ordering. The
+        # forensic_db.kubescape_logs schema partitions/TTLs event_time as nanos
+        # (fromUnixTimestamp64Nano); AE normalizes seconds-or-nanos by magnitude.
         if err == null {
-          .event_time = to_unix_timestamp(ts)
+          .event_time = to_unix_timestamp(ts, unit: "nanoseconds")
         } else {
-          .event_time = to_unix_timestamp(now())
+          .event_time = to_unix_timestamp(now(), unit: "nanoseconds")
         }
         # MITRE enrichment: node-agent's BaseRuntimeAlert struct (armoapi-go)
         # does not include mitreTactic / mitreTechnique fields, so they are
@@ -134,3 +143,18 @@ customConfig:
       batch:
         max_bytes: 5000000
         timeout_secs: 2
+
+    # S2: same enriched stream, node-local to the dx-daemon (DaemonSet on this
+    # node). HOST_IP is injected from status.hostIP; dx-daemon binds hostPort.
+    dx_daemon:
+      type: http
+      inputs:
+        - kubescape_enrich
+      uri: "http://${HOST_IP}:9099/findings"
+      method: post
+      encoding:
+        codec: json
+      batch:
+        max_events: 1
+      request:
+        retry_attempts: 3
