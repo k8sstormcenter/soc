@@ -16,5 +16,11 @@ We expressely thank the upstream maintainers of our main components: KubeScape a
 If you like it -> consider leaving a star ⭐
 
 
+ Filtering out the noise:
+<img width="1445" height="747" alt="PixieDXAttackGraph" src="https://github.com/user-attachments/assets/d50a5e7c-662b-4881-b384-c72de8ea5e96" />
+<img width="1454" height="920" alt="PixieDXAttackGraphNoise" src="https://github.com/user-attachments/assets/2bfb2506-31d1-43e2-b2a8-27ca3800f12c" />
+
+
+
 
 
