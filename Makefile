@@ -45,10 +45,10 @@ cluster-down: kind  ## Delete the kind cluster
 
 .PHONY: clickhouse
 clickhouse:
-	-./honeystack/clickhouse/bobapply.sh
-	sleep 15
-	kubectl wait --for=condition=Ready pod  -l app=clickhouse -n click --timeout=180s
-	./honeystack/clickhouse/init.sh
+	# Live installer: Altinity operator + keeper + installation + schema.sql
+	# (self-waits for readiness). Replaces the removed honeystack/ + tree/clickhouse/
+	# path, which pointed at scripts that no longer exist in the repo.
+	./tree/clickhouse-lab/install.sh
 
 .PHONY: storage
 storage:

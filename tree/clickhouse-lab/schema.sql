@@ -25,8 +25,8 @@ CREATE DATABASE IF NOT EXISTS forensic_db;
 
 -- Kubescape alerts (Vector kubescape_to_alerts sink).
 CREATE TABLE IF NOT EXISTS forensic_db.alerts (
-    timestamp       DateTime64(3),
-    ingest_time     DateTime64(3) DEFAULT now64(3),
+    timestamp       DateTime64(9),
+    ingest_time     DateTime64(9) DEFAULT now64(9),
     rule_id         LowCardinality(String),
     alert_name      LowCardinality(String),
     severity        UInt8,
