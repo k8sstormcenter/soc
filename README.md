@@ -1,4 +1,4 @@
-# K8sStormCenter: Understand your 🌩️ Threats (with 🐝)
+# Kubernetes StormCenter: Find runtime threats -- store only the evidence
 
 
 <img width="5026" height="2000" alt="SOCOverview" src="https://github.com/user-attachments/assets/424956cc-b4ba-404f-bb63-c464b9e74730" />
