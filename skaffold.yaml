@@ -30,6 +30,12 @@ manifests:
 deploy:
   helm: {}
   kubectl:
+    # Server-side apply: the altinity operator ships a CRD bundle whose ConfigMap
+    # exceeds the 262144-byte client-side last-applied-configuration annotation
+    # limit. SSA stores no such annotation; --force-conflicts takes field
+    # ownership from helm's manager on reconcile.
+    flags:
+      apply: ["--server-side", "--force-conflicts"]
     # After the ClickHouseInstallation CR is applied, wait for the server pod and
     # load the forensic_db schema (nanosecond timestamps, #227). Mirrors
     # tree/clickhouse-lab/install.sh. Uses `kubectl wait` (server-side) so there
@@ -71,7 +77,9 @@ manifests:
     - tree/kubescape/default-rules.yaml
 deploy:
   helm: {}
-  kubectl: {}
+  kubectl:
+    flags:
+      apply: ["--server-side", "--force-conflicts"]
 ---
 apiVersion: skaffold/v4beta11
 kind: Config
@@ -95,7 +103,9 @@ manifests:
     - tree/vector-lab/dx-daemon-service.yaml
 deploy:
   helm: {}
-  kubectl: {}
+  kubectl:
+    flags:
+      apply: ["--server-side", "--force-conflicts"]
 ---
 # Entry point: `skaffold deploy -m soc-stack` deploys clickhouse -> kubescape ->
 # vector via the requires chain above.
