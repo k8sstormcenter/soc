@@ -3,11 +3,11 @@
 > [!NOTE]
 > This repo contains the deployment artefacts for a sovereign SOC stack -- all development currently is on the individual repos (see the pixie/fork and the node-agent/fork and bob). The old code has been moved into the `deprecated` folder.
 >
-> <img width="5026" height="2000" alt="SOCOverview" src="https://github.com/user-attachments/assets/424956cc-b4ba-404f-bb63-c464b9e74730" />
+<img width="5026" height="2000" alt="SOCOverview" src="https://github.com/user-attachments/assets/424956cc-b4ba-404f-bb63-c464b9e74730" />
 
 
 This deploys an open-source SOC for `k8s`, so that you can visualize ongoing attacks, post-exploitation, save the evidence to a clickhouse database
-<img width="1891" height="1047" alt="pixiest" src="https://github.com/user-attachments/assets/3bbf8fce-da46-40ec-8479-18f7764df0a2" />
+
 
 
 We expressely thank the upstream maintainers of our main components: KubeScape and Pixie
