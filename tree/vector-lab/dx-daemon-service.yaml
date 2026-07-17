@@ -1,0 +1,38 @@
+# Node-local Service for the dx-daemon findings receiver.
+#
+# WHY THIS EXISTS — the vector -> dx findings delivery used to target
+# `https://${HOST_IP}:9099/findings`, relying on Vector interpolating the node
+# IP (status.hostIP) into the http-sink `uri` at config-load time. That
+# interpolation is unreliable through the timberio/vector `customConfig` path:
+# the literal `${HOST_IP}` reaches Vector's URL parser ("invalid uri
+# character") and every finding is silently dropped, starving dx so it looks
+# blind. (VRL's get_env_var!() works inside a remap, but the http-sink `uri`
+# field is not VRL, so it can't read env at runtime.)
+#
+# This ClusterIP Service replaces the interpolation with a stable DNS name:
+# dx-daemon.honey.svc.cluster.local:9099. `internalTrafficPolicy: Local` makes
+# kube-proxy route only to the dx pod on the SAME node as the caller, so vector
+# still reaches its co-located dx (required for pemdirect's node-local vizier),
+# with no per-node IP, no hostNetwork, and no config-time interpolation.
+# Portable across every node and cluster.
+#
+# dx-daemon is a DaemonSet (one pod per node) owned by dx-agent; this Service
+# is purely additive (selector app=dx-daemon) and does not touch the DaemonSet.
+# Apply it before/with the vector chart:
+#   kubectl apply -f tree/vector-lab/dx-daemon-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: dx-daemon
+  namespace: honey
+  labels:
+    app: dx-daemon
+spec:
+  internalTrafficPolicy: Local
+  selector:
+    app: dx-daemon
+  ports:
+    - name: findings
+      port: 9099
+      targetPort: 9099
+      protocol: TCP
