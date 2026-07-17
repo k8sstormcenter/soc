@@ -1,0 +1,107 @@
+# SOC stack — the whole NON-Pixie environment for the e2e / calibration suite.
+#
+# `skaffold deploy -m soc-stack` brings up ClickHouse -> kubescape -> vector (in
+# that order) on k3s. It is designed to be OVERLAID with:
+#   - Pixie's native Skaffold (the `pl` namespace: vizier + adaptive_export), and
+#   - the bob java-poc apps Skaffold (bob/example/java-poc, the sample workloads).
+#
+# Ownership: this repo owns honey (kubescape/vector/dx wiring) + clickhouse. It
+# does NOT own `pl` (Pixie) or the sample apps (bob) — those compose on top.
+#
+# k3s only for now. Everything references the authoritative in-repo configs
+# (tree/clickhouse-lab, tree/kubescape, tree/vector-lab) — no forked copies.
+# ---------------------------------------------------------------------------
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: soc-clickhouse
+manifests:
+  helm:
+    releases:
+      - name: clickhouse-operator
+        repo: https://helm.altinity.com
+        remoteChart: altinity-clickhouse-operator
+        version: 0.26.0
+        namespace: clickhouse
+        createNamespace: true
+  rawYaml:
+    - tree/clickhouse-lab/keeper.yaml
+    - tree/clickhouse-lab/installation.yaml
+deploy:
+  helm: {}
+  kubectl:
+    # After the ClickHouseInstallation CR is applied, wait for the server pod and
+    # load the forensic_db schema (nanosecond timestamps, #227). Mirrors
+    # tree/clickhouse-lab/install.sh. Uses `kubectl wait` (server-side) so there
+    # is no host sleep.
+    hooks:
+      after:
+        - host:
+            command:
+              - bash
+              - -c
+              - |
+                set -euo pipefail
+                NS=clickhouse; CHI=forensic-soc-db
+                kubectl -n "$NS" wait --for=create pod -l clickhouse.altinity.com/chi=$CHI --timeout=120s
+                kubectl -n "$NS" wait --for=condition=Ready pod -l clickhouse.altinity.com/chi=$CHI --timeout=240s
+                P=$(kubectl -n "$NS" get pods -l clickhouse.altinity.com/chi=$CHI -o jsonpath='{.items[0].metadata.name}')
+                kubectl -n "$NS" exec -i "$P" -- clickhouse-client --multiquery < tree/clickhouse-lab/schema.sql
+                echo "forensic_db schema applied"
+            os: [linux, darwin]
+---
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: soc-kubescape
+requires:
+  - configs: [soc-clickhouse]
+manifests:
+  helm:
+    releases:
+      - name: kubescape
+        repo: https://kubescape.github.io/helm-charts/
+        remoteChart: kubescape-operator
+        version: 1.30.2
+        namespace: honey
+        createNamespace: true
+        valuesFiles:
+          - tree/kubescape/values.yaml
+  rawYaml:
+    - tree/kubescape/default-rules.yaml
+deploy:
+  helm: {}
+  kubectl: {}
+---
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: soc-vector
+requires:
+  - configs: [soc-kubescape]
+manifests:
+  helm:
+    releases:
+      - name: vector
+        repo: https://helm.vector.dev
+        remoteChart: vector
+        # TODO(#230): pin the vector chart version for reproducibility.
+        namespace: honey
+        createNamespace: true
+        valuesFiles:
+          - tree/vector-lab/values.yaml
+  rawYaml:
+    # node-local delivery to dx (#228) — replaces the fragile ${HOST_IP} sink.
+    - tree/vector-lab/dx-daemon-service.yaml
+deploy:
+  helm: {}
+  kubectl: {}
+---
+# Entry point: `skaffold deploy -m soc-stack` deploys clickhouse -> kubescape ->
+# vector via the requires chain above.
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: soc-stack
+requires:
+  - configs: [soc-vector]
