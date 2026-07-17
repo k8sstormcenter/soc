@@ -1,12 +1,16 @@
 # K8sStormCenter: Understand your 🌩️ Threats (with 🐝)
 
-> [!NOTE]
-> This repo contains the deployment artefacts for a sovereign SOC stack -- all development currently is on the individual repos (see the pixie/fork and the node-agent/fork and bob). The old code has been moved into the `deprecated` folder.
->
+
 <img width="5026" height="2000" alt="SOCOverview" src="https://github.com/user-attachments/assets/424956cc-b4ba-404f-bb63-c464b9e74730" />
 
 
-This deploys an open-source SOC for `k8s`, so that you can visualize ongoing attacks, post-exploitation, save the evidence to a clickhouse database
+This deploys an open-source SOC for `k8s`, so that you can visualize ongoing attacks, post-exploitation, save the evidence to a clickhouse database.
+
+It employs adaptive exporting and real-time statistical correlation that remains on the node. 
+This means:  
+- your data never has to leave your datacenter
+- you can tune how much evidence you want to save
+- what you consider evidence
 
 
 
@@ -40,5 +44,7 @@ Sharded by node
 We are looking at a first release end of this summer, so that you can try it out in a compact `all on one k3s` playground
 
 
-
+> [!NOTE]
+> This repo contains the deployment artefacts for a sovereign SOC stack -- all development currently is on the individual repos (see the pixie/fork and the node-agent/fork and bob). The old code has been moved into the `deprecated` folder.
+>
 
