@@ -64,6 +64,6 @@ pip-log.txt
 
 honeystack/hive-sentinel/values.yaml
 
-attacks/managedidentitygke/deploy-9-beta.yaml
-attacks/lightening/caps-output.txt
+deprecated/attacks/managedidentitygke/deploy-9-beta.yaml
+deprecated/attacks/lightening/caps-output.txt
 .go-version
