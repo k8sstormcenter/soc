@@ -43,6 +43,8 @@ Sharded by node
 
 We are looking at a first release end of this summer, so that you can try it out in a compact `all on one k3s` playground
 
+THIS IS CURRENTLY NOT PRODUCTION READY and NOT STABLE, there is no governance or openssf scorecard, yet... its coming...
+
 
 > [!NOTE]
 > This repo contains the deployment artefacts for a sovereign SOC stack -- all development currently is on the individual repos (see the pixie/fork and the node-agent/fork and bob). The old code has been moved into the `deprecated` folder.
