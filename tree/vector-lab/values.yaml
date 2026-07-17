@@ -145,15 +145,24 @@ customConfig:
         timeout_secs: 2
 
     # S2: same enriched stream, node-local to the dx-daemon (DaemonSet on this
-    # node). HOST_IP is injected from status.hostIP; dx-daemon binds hostPort.
+    # node), addressed by a stable DNS name — NOT by interpolating the node IP.
+    #
+    # Vector does NOT reliably interpolate ${HOST_IP} into an http-sink `uri`
+    # through the customConfig path (the literal ${HOST_IP} reaches the URL
+    # parser -> "invalid uri character" -> findings silently dropped -> dx
+    # starves and looks blind). So we route via the dx-daemon ClusterIP Service
+    # with `internalTrafficPolicy: Local`, which delivers only to the dx pod on
+    # THIS node. Node-local, portable, zero interpolation.
+    # Service manifest: tree/vector-lab/dx-daemon-service.yaml (apply it too).
     dx_daemon:
       type: http
       inputs:
         - kubescape_enrich
       # TLS so findings don't cross the CNI in cleartext. dx serves a self-signed
-      # cert (DX_RECEIVER_TLS=1, entlein/dx#89); skip-verify since honey ns has no
-      # CA. Revert uri to http:// if DX_RECEIVER_TLS is off.
-      uri: "https://${HOST_IP}:9099/findings"
+      # cert (DX_RECEIVER_TLS=1, entlein/dx#89); skip-verify since the DNS name
+      # won't match the cert and honey ns has no CA. Revert to http:// if
+      # DX_RECEIVER_TLS is off.
+      uri: "https://dx-daemon.honey.svc.cluster.local:9099/findings"
       method: post
       tls:
         verify_certificate: false
