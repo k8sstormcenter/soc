@@ -1,0 +1,69 @@
+# soc-owned RuntimeRuleAlertBinding.
+#
+# With alertCRD.installDefault:false (tree/kubescape/values.yaml) the kubescape
+# helm chart no longer ships its own all-rules-all-pods binding, so soc supplies
+# it here. This binds the runtime rules to every workload namespace (the NotIn
+# list mirrors values.yaml excludeNamespaces). Whether a bound rule actually
+# fires is still gated by its `enabled` flag in default-rules.yaml
+# (R0002 on, R0003 off, R0011 on).
+#
+# "Syscalls Anomalies in container" (R0003) is intentionally NOT bound here —
+# we are not monitoring syscalls (it emits pid-less PID-0 events that AE cannot
+# attribute; disabled in default-rules.yaml too).
+apiVersion: kubescape.io/v1
+kind: RuntimeRuleAlertBinding
+metadata:
+  name: all-rules-all-pods
+  namespace: honey
+  labels:
+    kubescape.io/ignore: "true"
+    tier: ks-control-plane
+spec:
+  namespaceSelector:
+    matchExpressions:
+      - key: kubernetes.io/metadata.name
+        operator: NotIn
+        values:
+          - kubescape
+          - kube-system
+          - kube-flannel
+          - ingress-nginx
+          - olm
+          - px-operator
+          - honey
+          - pl
+          - clickhouse
+          - kube-public
+          - kube-node-lease
+          - local-path-storage
+          - gmp-system
+          - gmp-public
+          - storm
+          - lightening
+          - cert-manager
+  rules:
+    - ruleName: Unexpected process launched
+    - ruleName: Files Access Anomalies in container
+    - ruleName: Linux Capabilities Anomalies in container
+    - ruleName: DNS Anomalies in container
+    - ruleName: Unexpected service account token access
+    - ruleName: Workload uses Kubernetes API unexpectedly
+    - ruleName: Process executed from malicious source
+    - ruleName: Process tries to load a kernel module
+    - ruleName: Drifted process executed
+    - ruleName: Disallowed ssh connection
+    - ruleName: Fileless execution detected
+    - ruleName: Crypto miner launched
+    - ruleName: Process executed from mount
+    - ruleName: Crypto Mining Related Port Communication
+    - ruleName: Crypto Mining Domain Communication
+    - ruleName: Read Environment Variables from procfs
+    - ruleName: eBPF Program Load
+    - ruleName: Soft link created over sensitive file
+    - ruleName: Unexpected Sensitive File Access
+    - ruleName: Hard link created over sensitive file
+    - ruleName: Exec to pod
+    - ruleName: Port forward
+    - ruleName: Unexpected Egress Network Traffic
+    - ruleName: Malicious Ptrace Usage
+    - ruleName: Unexpected io_uring Operation Detected

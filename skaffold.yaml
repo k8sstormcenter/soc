@@ -74,12 +74,22 @@ manifests:
         valuesFiles:
           - tree/kubescape/values.yaml
   rawYaml:
+    # soc owns the runtime rule set + binding (helm's alertCRD.installDefault is
+    # false in values.yaml), so our enabled flags win instead of racing helm.
     - tree/kubescape/default-rules.yaml
+    - tree/kubescape/rule-alert-binding.yaml
 deploy:
   helm: {}
   kubectl:
     flags:
       apply: ["--server-side", "--force-conflicts"]
+    hooks:
+      # node-agent loads rules at boot; on redeploy (or if it started before the
+      # rawYaml rules landed) bounce it so R0002-on/R0003-off/R0011-on take effect.
+      after:
+        - host:
+            command: ["sh", "-c", "kubectl -n honey rollout restart ds/node-agent >/dev/null 2>&1 || true"]
+            os: [linux, darwin]
 ---
 apiVersion: skaffold/v4beta11
 kind: Config
