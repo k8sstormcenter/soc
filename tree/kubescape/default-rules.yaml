@@ -267,7 +267,7 @@ spec:
     - description: >-
         Detecting unexpected egress network traffic that is not whitelisted by
         application profile.
-      enabled: false
+      enabled: true
       expressions:
         message: >-
           'Unexpected egress network communication to: ' + event.dstAddr + ':' +
@@ -280,7 +280,7 @@ spec:
               && !nn.was_address_in_egress(event.containerId, event.dstAddr)
         uniqueId: event.dstAddr + '_' + string(event.dstPort) + '_' + event.proto
       id: R0011
-      isTriggerAlert: false
+      isTriggerAlert: true
       mitreTactic: TA0010
       mitreTechnique: T1041
       name: Unexpected Egress Network Traffic

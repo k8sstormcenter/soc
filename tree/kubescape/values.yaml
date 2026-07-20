@@ -18,9 +18,19 @@ nodeAgent:
       ruleCooldownMaxSize: 20000
 capabilities:
   runtimeDetection: enable
+  # networkEventsStreaming stays DISABLED on purpose: the rule engine receives
+  # network+DNS events directly (node-agent container_watcher.go), independent
+  # of the raw network-stream export. Enabling it only drives the httpExporter
+  # (empty url -> "unsupported protocol scheme" dead error). See bob #127/#140 +
+  # memory log4j-network-detection-chain. R0011/R0005 fire without it.
   networkEventsStreaming: disable
 alertCRD:
-  installDefault: true
+  # installDefault:false -> the helm chart does NOT create its own default-rules
+  # Rules object nor the all-rules-all-pods binding. soc owns both via rawYaml
+  # (default-rules.yaml + rule-alert-binding.yaml) so our enabled flags
+  # (R0002 on, R0003 off, R0011 on) win deterministically instead of losing the
+  # dual-ownership race to the chart's helm-managed defaults.
+  installDefault: false
   scopeClustered: true
 clusterName: bobexample
 ksNamespace: honey
