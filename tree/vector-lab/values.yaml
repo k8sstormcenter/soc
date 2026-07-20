@@ -172,3 +172,13 @@ customConfig:
         max_events: 1
       request:
         retry_attempts: 3
+      # Drop-on-full: dx is an OPTIONAL, node-local sink. If dx-daemon is down
+      # (not deployed yet, restarting, or its receiver refuses), the default
+      # when_full=block back-pressures the shared kubescape_enrich transform and
+      # STALLS the kubescape_clickhouse sink too — so kubescape findings stop
+      # reaching ClickHouse (and therefore AE). A down dx must never stall the
+      # forensic pipeline: drop dx findings rather than block.
+      buffer:
+        type: memory
+        max_events: 500
+        when_full: drop_newest
