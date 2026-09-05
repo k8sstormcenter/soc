@@ -55,17 +55,23 @@ skaffold deploy -f skaffold/skaffold_dx.yaml                 # DX 0.5.0-keepset-
   missing so `apply.go` recreates them).
 - DX creates the `dx_orders` / `dx_ord__*` / `dx_src__kubescape_mitre` schema the
   `dx/*` views read.
-- **DX reads its evidence via the in-cluster query-broker — `DX_BENCH=broker`** (wired
-  in `skaffold_dx.yaml`; the skaffold sets up everything the broker path needs). This is
-  the reliable in-cluster path — **do not switch it to `pemdirect`.** `pemdirect` dials a
-  PEM direct-query listener that the stock PEM (0.14.17) does not ship, so it is refused
-  and dx goes **blind**: every dx-owned table (`conn_stats`, `dc_snoop`, `stack_trace`,
-  `redis_events`, `mysql_events`, …) renders empty while the AE-owned tables
-  (`http_events`, `dns_events`, `pgsql_events`, `creds_change`) stay populated. Confirm
-  the right path with the dx-daemon log line
-  `bench=broker (pxapi → in-cluster vizier-query-broker …)` — if you instead see
-  `bench=px` (px CLI) or `bench UNAVAILABLE`, the broker path didn't select and the
-  dx-owned panels will be blank.
+- **PEM, AE, and DX all query node-local via pem-direct — that is real-time
+  detection.** Each PEM answers queries from its OWN node on `:50305`; no cloud or
+  broker round-trip. This needs **our** PEM line, not stock Pixie: stock `0.14.17`
+  does not ship the `:50305` direct-query listener, so pem-direct is refused and dx
+  goes **blind** (every dx-owned table — `conn_stats`, `dc_snoop`, `stack_trace`,
+  `redis_events`, `mysql_events`, … — renders empty). Our PEM ships it (pem-direct
+  is default-on in `main` since #87) and is built alongside AE at the same tag.
+  - **PEM image: `ghcr.io/k8sstormcenter/vizier-pem_image:0.14.19-aeprod90`** —
+    pinned in the pixie `k8s/vizier/pem` overlay, so it deploys with the vizier
+    skaffold in §3 (no extra step).
+  - AE queries its own node: `ADAPTIVE_VIZIER_DIRECT_ADDR=$(HOST_IP):50305`
+    (already set in `adaptive_export_deployment.yaml`).
+  - DX queries its own node: `DX_BENCH=pemdirect`. Confirm with the dx-daemon log
+    line `bench=pemdirect (… :50305)`. If you see `bench=broker`,
+    `bench=px`, or `bench UNAVAILABLE`, pem-direct didn't select — the usual cause
+    is a stock `0.14.17` PEM instead of our line; verify with
+    `kubectl -n pl get ds vizier-pem -o jsonpath='{..image}'`.
 - **dx is order-driven — its tables stay empty until an alert fires.** Right after
   deploy, `conn_stats` / `dc_snoop` / `stack_trace` / the protocol tables read **0**
   because no anomaly has produced a referral yet. This is expected — do **not** read it
