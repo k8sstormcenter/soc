@@ -24,7 +24,7 @@ nodeAgent:
     #
     # It is also the volume multiplier behind every downstream memory finding. A
     # cluster lost its control-plane node after a day of ~3200 alerts/hour: each
-    # alert is a synchronous exporter round-trip, a vector event, a ClickHouse row
+    # alert is a synchronous exporter round-trip, a vector event, a CH row
     # and a dx referral, and the export path leaks one connection per capture it
     # triggers. Cooldown is what bounds a slow permanent stream; a burst ceiling
     # does not, because such a stream sits below any ceiling that would not also
