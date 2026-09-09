@@ -18,6 +18,19 @@ nodeAgent:
     learningPeriod: 10m
     updatePeriod: 10000m
     networkServiceResolution: true
+    # Cooldown is OFF and stays off. Suppression hides false positives instead
+    # of removing them; we deal with them by authoring good profiles and by
+    # fixing the auto-learning, and every rule hit has to be emitted for the
+    # detection-quality measurement to count what the sensor actually
+    # produces. Code defaults are 1h / count 1 (node-agent pkg/config); do not
+    # restore them here.
+    #
+    # Consequence to design for rather than suppress: each alert is a
+    # synchronous exporter round-trip, a vector event, a CH row and a dx
+    # referral, and the export path leaks one connection per capture it
+    # triggers. A cluster lost its control-plane node after a day at ~3200
+    # alerts/hour. The fix for that rate is correct classification and
+    # complete profiles, not a ceiling.
     ruleCooldown:
       ruleCooldownDuration: 0h
       ruleCooldownAfterCount: 1000000000
