@@ -18,20 +18,22 @@ nodeAgent:
     learningPeriod: 10m
     updatePeriod: 10000m
     networkServiceResolution: true
-    # Cooldown is OFF on purpose: every rule hit is emitted so a measurement run
-    # counts what the sensor actually produces rather than what it reports after
-    # suppression. Code defaults are 1h / count 1 (node-agent pkg/config).
+    # Cooldown is OFF on purpose: every rule hit is emitted so a measurement
+    # run counts what the sensor actually produces rather than what it reports
+    # after suppression. Code defaults are 1h / count 1 (node-agent
+    # pkg/config).
     #
-    # It is also the volume multiplier behind every downstream memory finding. A
-    # cluster lost its control-plane node after a day of ~3200 alerts/hour: each
-    # alert is a synchronous exporter round-trip, a vector event, a CH row
-    # and a dx referral, and the export path leaks one connection per capture it
-    # triggers. Cooldown is what bounds a slow permanent stream; a burst ceiling
-    # does not, because such a stream sits below any ceiling that would not also
-    # suppress legitimate bursts. The real fix for a stream is to correct the
-    # classification that produces it, not to raise this.
+    # It is also the volume multiplier behind every downstream memory finding.
+    # A cluster lost its control-plane node after a day of ~3200 alerts/hour:
+    # each alert is a synchronous exporter round-trip, a vector event, a CH
+    # row and a dx referral, and the export path leaks one connection per
+    # capture it triggers. Cooldown is what bounds a slow permanent stream; a
+    # burst ceiling does not, because such a stream sits below any ceiling
+    # that would not also suppress legitimate bursts. The real fix for a
+    # stream is to correct the classification that produces it.
     #
-    # Turn it back on (1h / count 1) for any cluster that is not being measured.
+    # Turn it back on (1h / count 1) for any cluster that is not being
+    # measured.
     ruleCooldown:
       ruleCooldownDuration: 0h
       ruleCooldownAfterCount: 1000000000
