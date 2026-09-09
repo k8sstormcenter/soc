@@ -78,7 +78,8 @@ data:
     # that is gone. Carry the uids and the container id so a consumer can tell
     # a live period from a phantom without querying the cluster.
     for col in ("pod_uid String", "container_id String", "workload_uid String",
-                "node String", "state String", "learning UInt8", "since String"):
+                "node String", "state String", "learning UInt8", "since String",
+                "fired_at String", "healed_at String"):
         ch("ALTER TABLE forensic_db.kubescape_rogueartifacts ADD COLUMN IF NOT EXISTS " + col)
     ch("CREATE TABLE IF NOT EXISTS forensic_db.kubescape_trust (event_time UInt64, hostname String, ts DateTime, class String, signer_key String, allowed_paths String) ENGINE=MergeTree ORDER BY (event_time, class, signer_key)")
 
@@ -130,6 +131,10 @@ data:
                       "state": s.get("state", "") or l.get("kubescape.io/rogue-state", ""),
                       "learning": 1 if (s.get("learning") or l.get("kubescape.io/rogue-learning") == "true") else 0,
                       "since": m.get("creationTimestamp", ""),
+                      # status carries the period's own bounds; healed_at stays
+                      # empty while the artifact is firing.
+                      "fired_at": (it.get("status") or {}).get("firedAt") or "",
+                      "healed_at": (it.get("status") or {}).get("healedAt") or "",
                       "rogue_phase": l.get("kubescape.io/rogue-phase", "") or s.get("state", "")})
     insert("kubescape_rogueartifacts", rrows)
 
