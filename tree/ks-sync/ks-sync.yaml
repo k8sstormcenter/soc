@@ -73,6 +73,13 @@ data:
 
     ch("CREATE TABLE IF NOT EXISTS forensic_db.kubescape_profiles (event_time UInt64, hostname String, ts DateTime, namespace String, name String, kind String, managed_by String, completion String, status String, signed Int64, signer_identity String, signer_issuer String, execs String, opens String, egress String, ingress String, syscalls String, capabilities String) ENGINE=MergeTree ORDER BY (event_time, namespace, name)")
     ch("CREATE TABLE IF NOT EXISTS forensic_db.kubescape_rogueartifacts (event_time UInt64, hostname String, ts DateTime, namespace String, name String, container_name String, workload_name String, workload_kind String, pod_name String, rogue_phase String) ENGINE=MergeTree ORDER BY (event_time, namespace, name)")
+    # A pod name does not identify a pod: a StatefulSet reuses it across
+    # replacements, so an artifact naming a live pod may describe an instance
+    # that is gone. Carry the uids and the container id so a consumer can tell
+    # a live period from a phantom without querying the cluster.
+    for col in ("pod_uid String", "container_id String", "workload_uid String",
+                "node String", "state String", "learning UInt8", "since String"):
+        ch("ALTER TABLE forensic_db.kubescape_rogueartifacts ADD COLUMN IF NOT EXISTS " + col)
     ch("CREATE TABLE IF NOT EXISTS forensic_db.kubescape_trust (event_time UInt64, hostname String, ts DateTime, class String, signer_key String, allowed_paths String) ENGINE=MergeTree ORDER BY (event_time, class, signer_key)")
 
     # Carry the profile CONTENT, not counts — the shadow_profiles view shows what
@@ -107,12 +114,22 @@ data:
     insert("kubescape_profiles", prows)
 
     rrows = []
-    for it in kget(GRP + "/rogueartifacts").get("items", []):
-        m = it["metadata"]; l = m.get("labels", {}) or {}; s = it.get("spec", {}) or {}
+    # LIST returns these metadata-only as well, so the spec comes back empty and
+    # every identity field below would be blank; GET each one for the real spec.
+    for lit in kget(GRP + "/rogueartifacts").get("items", []):
+        lns = lit["metadata"].get("namespace", ""); lnm = lit["metadata"].get("name", "")
+        it = kget(GRP + "/namespaces/" + lns + "/rogueartifacts/" + lnm)
+        m = it.get("metadata", {}); l = m.get("labels", {}) or {}; s = it.get("spec", {}) or {}
         rrows.append({"namespace": m.get("namespace", ""), "name": m.get("name", ""),
-                      "container_name": l.get("kubescape.io/container-name", ""),
+                      "container_name": s.get("containerName", "") or l.get("kubescape.io/container-name", ""),
                       "workload_name": s.get("workloadName", ""), "workload_kind": s.get("workloadKind", ""),
                       "pod_name": s.get("podName", "") or l.get("kubescape.io/pod", ""),
+                      "pod_uid": s.get("podUID", ""), "container_id": s.get("containerID", ""),
+                      "workload_uid": s.get("workloadUID", "") or l.get("kubescape.io/workload-uid", ""),
+                      "node": l.get("kubescape.io/node", ""),
+                      "state": s.get("state", "") or l.get("kubescape.io/rogue-state", ""),
+                      "learning": 1 if (s.get("learning") or l.get("kubescape.io/rogue-learning") == "true") else 0,
+                      "since": m.get("creationTimestamp", ""),
                       "rogue_phase": l.get("kubescape.io/rogue-phase", "") or s.get("state", "")})
     insert("kubescape_rogueartifacts", rrows)
 
