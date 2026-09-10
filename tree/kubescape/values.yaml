@@ -5,11 +5,11 @@ imagePullSecrets: duckling-pull
 storage:
   image:
     repository: ghcr.io/k8sstormcenter/storage
-    tag: rc-rogue5
+    tag: rc-rogue19
 nodeAgent:
   image:
     repository: docker.io/entlein/duckling
-    tag: v0.1.0-rogue8
+    tag: v0.1.0-rogue19
     pullPolicy: Always
   config:
     alertManagerExporterUrls:
