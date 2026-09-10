@@ -20,12 +20,8 @@ spec:
       logger/level: information
       background_pool_size: "16"
       query_log/flush_interval_milliseconds: "5000"
-      # system logs have no TTL by default and filled a 20 GB PVC to DiskPressure
-      query_log/ttl: "event_date + INTERVAL 7 DAY DELETE"
-      part_log/ttl: "event_date + INTERVAL 7 DAY DELETE"
-      metric_log/ttl: "event_date + INTERVAL 3 DAY DELETE"
-      trace_log/ttl: "event_date + INTERVAL 1 DAY DELETE"
-      processors_profile_log/ttl: "event_date + INTERVAL 1 DAY DELETE"
+      # a standalone <table>/ttl is rejected at metadata load (BAD_ARGUMENTS 36): a
+      # system table's TTL belongs inside its <engine>, so the server never starts
       skip_check_for_incorrect_settings: "1"
       # bound total in-flight queries (default 100) so a burst can't peg the node;
       # the Live UI runs one query per widget, dx views have up to ~25 widgets
