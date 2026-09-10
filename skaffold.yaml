@@ -103,7 +103,7 @@ manifests:
   helm:
     releases:
       - name: kubescape
-        remoteChart: https://github.com/k8sstormcenter/helm-charts/releases/download/kubescape-operator-1.41.0-duckling12/kubescape-operator-1.41.0-duckling12.tgz
+        remoteChart: https://github.com/k8sstormcenter/helm-charts/releases/download/kubescape-operator-1.41.0-duckling13/kubescape-operator-1.41.0-duckling13.tgz
         namespace: honey
         createNamespace: true
         valuesFiles:
