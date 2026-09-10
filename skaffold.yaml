@@ -150,7 +150,6 @@ manifests:
   rawYaml:
     # node-local delivery to dx (#228) — replaces the fragile ${HOST_IP} sink.
     - tree/vector-lab/dx-daemon-service.yaml
-    - tree/ks-sync/ks-sync.yaml
 deploy:
   helm: {}
   kubectl:
