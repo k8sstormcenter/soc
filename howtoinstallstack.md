@@ -16,7 +16,7 @@ ClickHouse forensic store, Kubescape runtime SBoB enforcement, Vector, and Pixie
 
 | repo | branch | provides |
 |---|---|---|
-| `k8sstormcenter/soc` | `main` (or the current deploy branch) | soc stack skaffold (ClickHouse + Kubescape + Vector + dx-wiring), `ks-sync`, `ch-cleanup` |
+| `k8sstormcenter/soc` | `main` (or the current deploy branch) | soc stack skaffold (ClickHouse + Kubescape + Vector + dx-wiring), `ch-cleanup` |
 | `k8sstormcenter/pixie` | `feat/pixie-native-sbob` | AE + DX skaffolds, Pixie's own SBoBs (default-on), the `dx/*` views |
 | `k8sstormcenter/bob` | per demo | the demo apps + SBoBs + the signed trust policy |
 
@@ -35,8 +35,10 @@ This brings up, in order (the module chains the dependencies):
   node-agent `docker.io/entlein/duckling:v0.1.0-rogue8`, storage `rc-rogue5`,
   `maxLearningPeriod: 24h`, `learningPeriod: 10m`.
 - **Vector** (kubescape → ClickHouse pipeline) + the **dx-wiring**.
-- The **`ks-ch-sync`** CronJob (kubescape ContainerProfiles / rogue artifacts / trust
-  policy → ClickHouse, every 2 min).
+- Kubescape ContainerProfiles / rogue artifacts / trust policy reach ClickHouse
+  from **adaptive-export** (`internal/ae/kssync`, 0.16.4-rc1 and later), which
+  writes a row only when the content changes. The `ks-ch-sync` CronJob it
+  replaced re-wrote every profile every 2 minutes regardless.
 
 ## 2. Pixie Adaptive Export + DX (pinned images)
 
@@ -133,7 +135,7 @@ the cluster.
 
 ```
 kubectl -n pl get pods        # vizier Healthy, adaptive-export Running, dx-daemon Running
-kubectl -n honey get pods     # node-agent, storage, vector, ks-ch-sync
+kubectl -n honey get pods     # node-agent, storage, vector
 kubectl -n clickhouse exec <ch-pod> -- clickhouse-client \
   -q "SHOW TABLES FROM forensic_db"     # dx_orders, dx_ord__*, kubescape_*
 ```
