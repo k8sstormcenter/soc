@@ -12,8 +12,10 @@ nodeAgent:
     tag: v0.1.0-rogue26
     pullPolicy: Always
   config:
-    alertManagerExporterUrls:
-      - alertmanager.honey.svc.cluster.local:9093
+    # Nothing in soc-stack deploys Alertmanager. With a URL set, every rule hit
+    # is also a failed POST (DNS: no such host) logged at warn — one per alert.
+    # The path that feeds ClickHouse is stdoutExporter -> vector, chart default.
+    alertManagerExporterUrls: []
     maxLearningPeriod: 24h
     learningPeriod: 10m
     updatePeriod: 10000m
