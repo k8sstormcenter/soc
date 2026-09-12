@@ -3,6 +3,13 @@
 
 role: "Agent"
 
+# Disk buffers live under dataDir; without persistence the emptyDir is lost with
+# the pod and the buffer with it.
+persistence:
+  enabled: true
+  hostPath:
+    path: /var/lib/vector
+
 image:
   repository: timberio/vector
   pullPolicy: IfNotPresent
@@ -174,15 +181,20 @@ customConfig:
         codec: json
       batch:
         max_events: 1
-      request:
-        retry_attempts: 3
+      # Retries are unbounded (vector's default, exponential backoff): a dx
+      # rollout or a refusing receiver is transient, and three attempts were
+      # exactly what turned every dx restart into dropped admissions.
       # Drop-on-full: dx is an OPTIONAL, node-local sink. If dx-daemon is down
       # (not deployed yet, restarting, or its receiver refuses), the default
       # when_full=block back-pressures the shared kubescape_enrich transform and
       # STALLS the kubescape_clickhouse sink too — so kubescape findings stop
       # reaching ClickHouse (and therefore AE). A down dx must never stall the
       # forensic pipeline: drop dx findings rather than block.
+      # Disk buffer, 1 GiB, on the node (persistence.hostPath below): admissions
+      # produced while dx is rolling or unreachable are replayed, not dropped.
+      # drop_newest still applies at the 1 GiB limit so a dead dx can never
+      # stall the kubescape_clickhouse sink through the shared transform.
       buffer:
-        type: memory
-        max_events: 500
+        type: disk
+        max_size: 1073741824
         when_full: drop_newest
