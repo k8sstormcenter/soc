@@ -42,7 +42,15 @@ spec:
       forensic_analyst/max_execution_time: "90"
       forensic_analyst/max_threads: "2"
       forensic_analyst/max_concurrent_queries_for_user: "24"
-      forensic_analyst/max_memory_usage: "4000000000"
+      # Memory: the container limit is 6Gi and the server keeps ~90% of it.
+      # 24 concurrent analyst queries at 4 GB each is 96 GB of allowed
+      # allocation on a 5.4 GB server — one browser tab of auto-refreshing
+      # profile panels OOMKilled the container on 2026-09-10. A query that
+      # exceeds its cap fails with MEMORY_LIMIT_EXCEEDED; the server, every
+      # insert and every other query continue. The largest known view read
+      # (dx_profiles__latest over every generation) is 82 MiB.
+      forensic_analyst/max_memory_usage: "1500000000"
+      forensic_analyst/max_memory_usage_for_user: "2500000000"
 
       # Ingest: INSERT allowed, no DELETE/ALTER/DDL.
       # Async insert: CH accumulates rows in RAM and flushes in bulk,
