@@ -2,15 +2,7 @@
 # deploy must create the duckling-pull secret in honey before the node-agent
 # schedules (docker login -u entlein first). See Makefile/skaffold pull-secret step.
 imagePullSecrets: duckling-pull
-storage:
-  image:
-    repository: ghcr.io/k8sstormcenter/storage
-    tag: rc-rogue22
 nodeAgent:
-  image:
-    repository: docker.io/entlein/duckling
-    tag: v0.1.0-rogue28
-    pullPolicy: Always
   config:
     # Nothing in soc-stack deploys Alertmanager. With a URL set, every rule hit
     # is also a failed POST (DNS: no such host) logged at warn — one per alert.
