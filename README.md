@@ -37,7 +37,7 @@ This allows anchoring known malicious signals to kick off the investigation
 - clickhouse: for saving the data out of band from your cluster
 Sharded by node
 
-- vector: for moving data from A to B  (might be replaced by a dedicated protocol later)
+- vector: for moving data from A to B  (is in the process of being deprecated)
 
 
 ## Backlog
