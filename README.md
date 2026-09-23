@@ -17,7 +17,7 @@ This means:
 <img width="1920" height="1080" alt="kcd_sofia" src="https://github.com/user-attachments/assets/762a8740-8006-4bb2-b96c-113846d20e77" />
 
 
-We expressely thank the upstream maintainers of our main components: KubeScape and Pixie
+We expressely thank the upstream maintainers of our main components: KubeScape and Pixie and Ran 
 
 If you like it -> consider leaving a star ⭐
 
