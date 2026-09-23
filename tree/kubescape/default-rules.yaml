@@ -204,7 +204,7 @@ spec:
           - eventType: network
             expression: >-
               event.pktType == 'OUTGOING' &&
-              k8s.is_api_server_address(event.dstAddr) &&
+              k8s.is_api_server_address(event.dstAddr, event.dstPort) &&
               !cp.was_address_in_egress(event.containerId, event.dstAddr)
         uniqueId: >-
           eventType == 'exec' ? 'exec_' + event.comm : 'network_' +
@@ -313,6 +313,7 @@ spec:
               && event.dstAddr != '::1'
               && !cp.was_address_port_protocol_in_egress(event.containerId, event.dstAddr, event.dstPort, event.proto)
               && !cp.was_selector_in_egress(event.containerId, event.dstNamespace, event.dstPodLabels, event.dstPort, event.proto)
+              && !cp.is_host_peer_egress(event.containerId, event.dstAddr, event.dstPort, event.proto)
         uniqueId: event.dstAddr + '_' + string(event.dstPort) + '_' + event.proto
       id: R0011
       isTriggerAlert: true
@@ -344,6 +345,7 @@ spec:
               && event.dstAddr != '::1'
               && !cp.was_address_port_protocol_in_ingress(event.containerId, event.dstAddr, event.dstPort, event.proto)
               && !cp.was_selector_in_ingress(event.containerId, event.dstNamespace, event.dstPodLabels, event.dstPort, event.proto)
+              && !cp.is_host_peer_ingress(event.containerId, event.dstAddr, event.dstPort, event.proto)
         uniqueId: event.dstAddr + '_' + string(event.dstPort) + '_' + event.proto
       id: R0012
       isTriggerAlert: true
