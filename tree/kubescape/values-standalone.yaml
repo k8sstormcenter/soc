@@ -1,0 +1,4 @@
+nodeAgent:
+  config:
+    alertManagerExporterUrls:
+      - alertmanager.honey.svc.cluster.local:9093

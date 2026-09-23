@@ -97,8 +97,6 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: soc-kubescape
-requires:
-  - configs: [soc-clickhouse]
 manifests:
   helm:
     releases:
@@ -113,6 +111,14 @@ manifests:
     # false in values.yaml), so our enabled flags win instead of racing helm.
     - tree/kubescape/default-rules.yaml
     - tree/kubescape/rule-alert-binding.yaml
+profiles:
+  # Standalone consumers (bob's demos) have no vector/ClickHouse path, so the
+  # alerts have to reach an Alertmanager or nothing observes them.
+  - name: standalone
+    patches:
+      - op: add
+        path: /manifests/helm/releases/0/valuesFiles/-
+        value: tree/kubescape/values-standalone.yaml
 deploy:
   helm: {}
   kubectl:
@@ -157,10 +163,12 @@ deploy:
       apply: ["--server-side", "--force-conflicts"]
 ---
 # Entry point: `skaffold deploy -m soc-stack` deploys clickhouse -> kubescape ->
-# vector via the requires chain above.
+# vector. soc-kubescape is standalone — `skaffold deploy -m soc-kubescape` brings
+# up the detection stack alone, for consumers that do not want the forensic store
+# (add -p standalone to point node-agent at an Alertmanager).
 apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: soc-stack
 requires:
-  - configs: [soc-vector]
+  - configs: [soc-clickhouse, soc-vector]
