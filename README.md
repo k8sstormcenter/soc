@@ -5,7 +5,7 @@
 <img width="5026" height="2000" alt="SOCOverview" src="https://github.com/user-attachments/assets/424956cc-b4ba-404f-bb63-c464b9e74730" />
 
 
-This deploys an open-source SOC for `k8s`, so that you can visualize ongoing attacks, post-exploitation, save the evidence to a clickhouse database.
+This deploys an the sensors that would be consumed into a SOC for `k8s`, so that you can visualize ongoing attacks, post-exploitation, save the evidence to a clickhouse database.
 
 It employs adaptive exporting and real-time statistical correlation that remains on the node. 
 This means:  
