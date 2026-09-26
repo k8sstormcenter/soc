@@ -71,7 +71,7 @@ skaffold deploy -f skaffold/skaffold_dx.yaml
 ## Run the e2e test (redis)
 
 Deploys the vulnerable Redis + its SBOB (user-defined ContainerProfile), fires the
-post-compromise stage-2 attacks, and exports.
+post-compromise stage-2 attacks, and exports. Should this demo not work, look at the `example` folder of the [bob repo](https://github.com/k8sstormcenter/bob) and PRs, you ll find inspiration there.
 
 ```bash
 ./run-redis-e2e.sh            # deploy redis -> bind SBOB -> attack-suite -> assert detections
@@ -90,4 +90,6 @@ conn_stats            redis  127.0.0.1  proto:7  sent:19628 recv:39256
 redis_events          redis  EVAL  io.popen("getent hosts xmr.pool.minergate.com")   (CVE-2022-0543 Lua sandbox escape -> OS cmd)
 stack_trace           redis  __open;[k] entry_SYSCALL_64_after_hwframe  count:1
 adaptive_attribution  redis/sh  R0002  n_anomalies:1846
+
+... and many more (some unstable and subject to DDL changes)
 ```
