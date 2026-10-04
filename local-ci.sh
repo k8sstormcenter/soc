@@ -13,7 +13,7 @@ CH_NS="socdemo-ch"
 KS_NS="socdemo"
 CHI="forensic-soc-db"
 INFER_JSON="$CH_DIR/infer_flat.json"
-KUBESCAPE_CHART_VER="${KUBESCAPE_CHART_VER:-1.41.0-duckling6}"
+KUBESCAPE_CHART_VER="${KUBESCAPE_CHART_VER:-1.41.0-duckling46}"
 
 PASS=0; FAIL=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "  PASS: $1"; PASS=$((PASS+1)); else echo "  FAIL: $1"; FAIL=$((FAIL+1)); fi; return 0; }
