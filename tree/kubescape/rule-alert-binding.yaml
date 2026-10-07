@@ -4,10 +4,10 @@ metadata:
   name: all-rules-all-pods
 spec:
   namespaceSelector:
-  # Second ns gate, separate from values.excludeNamespaces: rules map to zero pods
-  # in any ns listed here, silently. pl/px-operator/olm (pixie's own stack) are now
-  # WATCHED so their SBoBs are enforced; only honey+clickhouse (our infra) stay out.
-  # Must stay in lockstep with values.excludeNamespaces.
+  # Second ns gate, and it must list the same namespaces as values.excludeNamespaces.
+  # A namespace the sensor excludes produces no profiles at all, so rules bound there can
+  # never fire whatever this list says: the sensor's list always wins, and a binding that
+  # claims to watch a namespace the sensor skips is a promise nothing keeps.
     matchExpressions:
       - key: "kubernetes.io/metadata.name"
         operator: "NotIn"
@@ -27,6 +27,14 @@ spec:
         - "storm"
         - "lightening"
         - "cert-manager"
+        - "chain-loadgen"
+        - "pl"
+        - "olm"
+        - "px-operator"
+        - "tailscale-system"
+        - "traefik"
+        - "cilium-secrets"
+        - "external-dns"
   rules:
     - ruleName: "Unexpected process launched"
     - ruleName: "Unexpected process arguments"
