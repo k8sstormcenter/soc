@@ -19,7 +19,7 @@ This means:
 
 We expressely thank the upstream maintainers of our main components: KubeScape and Pixie and Ran 
 
-If you like it -> consider leaving a star ⭐
+
 
 
 Why its cool, cause it has adaptive features that allow filtering out the noise:
@@ -46,36 +46,23 @@ Sharded by node
 ## Backlog
 
 We are looking at a first release end of this summer, so that you can try it out in a compact `all on one k3s` playground
+TODO: make the lab boot in free tier.
 
-THIS IS CURRENTLY NOT PRODUCTION READY and NOT STABLE, there is no governance or openssf scorecard, yet... its coming...
+THIS IS CURRENTLY NOT PRODUCTION READY and NOT STABLE, there is no governance or openssf scorecard, yet...
 
 
 
 ## Install
 
-Prereqs: a `k8s` cluster  with **Pixie** deployed using the `pem-direct` configuration.
-
-```bash
-skaffold run -m soc-stack
-
-# make sure you already have a vanilla pixie installed via px install, then clone the pixie fork
-git -C ~/pixie checkout -q fix/ae-protocol-export-pxexport
-skaffold deploy -f skaffold/skaffold_adaptive_export.yaml
-skaffold deploy -f skaffold/skaffold_dx.yaml
 ```
+public release, with grant Netidee 7918 is due Nov 2026
+```
+
 
 <img width="1902" height="1139" alt="Screenshot 2026-08-22 at 22 10 12" src="https://github.com/user-attachments/assets/9f796aef-c12f-4bba-b10d-65e3ed46093b" />
 
 
 
-## Run the e2e test (redis)
-
-Deploys the vulnerable Redis + its SBOB (user-defined ContainerProfile), fires the
-post-compromise stage-2 attacks, and exports. Should this demo not work, look at the `example` folder of the [bob repo](https://github.com/k8sstormcenter/bob) and PRs, you ll find inspiration there.
-
-```bash
-./run-redis-e2e.sh            # deploy redis -> bind SBOB -> attack-suite -> assert detections
-```
 
 
 ## Evidence in ClickHouse 
