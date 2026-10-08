@@ -166,7 +166,7 @@ deploy:
       # briefly written twice rather than lost.
       after:
         - host:
-            command: ["sh", "-c", "helm status vector -n honey >/dev/null 2>&1 || exit 0; kubectl -n honey rollout status ds/node-agent --timeout=10m && helm uninstall vector -n honey"]
+            command: ["sh", "tree/kubescape/retire-vector.sh"]
             os: [linux, darwin]
   kubectl:
     flags:
