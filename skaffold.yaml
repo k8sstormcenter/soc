@@ -16,6 +16,22 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: soc-clickhouse
+# skaffold stamps a fresh skaffold.dev/run-id on what it deploys. On a pod
+# template that is a template change, so an unchanged tree rolled every pod on
+# every deploy. Denied here so a repeated deploy changes nothing; a new image
+# or config still rolls.
+resourceSelector:
+  deny:
+    - groupKind: DaemonSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Deployment.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: StatefulSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Job.batch
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Service
+      labels: [".metadata.labels"]
 manifests:
   helm:
     releases:
@@ -98,6 +114,22 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: soc-kubescape
+# skaffold stamps a fresh skaffold.dev/run-id on what it deploys. On a pod
+# template that is a template change, so an unchanged tree rolled every pod on
+# every deploy. Denied here so a repeated deploy changes nothing; a new image
+# or config still rolls.
+resourceSelector:
+  deny:
+    - groupKind: DaemonSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Deployment.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: StatefulSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Job.batch
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Service
+      labels: [".metadata.labels"]
 manifests:
   helm:
     releases:
@@ -144,12 +176,7 @@ deploy:
         - host:
             command: ["sh", "-c", "kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1; kubectl create secret docker-registry duckling-pull -n honey --from-file=.dockerconfigjson=$HOME/.docker/config.json --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1 || true"]
             os: [linux, darwin]
-      # node-agent loads rules at boot; on redeploy (or if it started before the
-      # rawYaml rules landed) bounce it so R0002-on/R0003-off/R0011-on take effect.
-      after:
-        - host:
-            command: ["sh", "-c", "kubectl -n honey rollout restart ds/node-agent >/dev/null 2>&1 || true"]
-            os: [linux, darwin]
+      # No node-agent restart: its rules watcher picks up the rawYaml rules live.
 ---
 # Entry point: `skaffold deploy -m soc-stack` deploys clickhouse -> kubescape.
 # soc-kubescape is standalone — `skaffold deploy -m soc-kubescape` brings
