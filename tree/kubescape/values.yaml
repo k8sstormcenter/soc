@@ -3,6 +3,10 @@
 # schedules (docker login -u entlein first). See Makefile/skaffold pull-secret step.
 imagePullSecrets: duckling-pull
 nodeAgent:
+  directAlerts:
+    enabled: true
+    port: 50405
+    jwtPublicKeySecret: node-agent-direct-jwt-pub
   config:
     # Nothing in soc-stack deploys Alertmanager. With a URL set, every rule hit
     # is also a failed POST (DNS: no such host) logged at warn — one per alert.
