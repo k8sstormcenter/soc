@@ -64,13 +64,7 @@ kubescape:
 	helm repo update
 	kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f -
 	kubectl create secret docker-registry duckling-pull -n honey --from-file=.dockerconfigjson=$(HOME)/.docker/config.json --dry-run=client -o yaml | kubectl apply -f -
-	kubectl -n honey get secret node-agent-direct-jwt-pub >/dev/null 2>&1 || ( \
-	  tmp=$$(mktemp -d) && \
-	  openssl ecparam -genkey -name prime256v1 -noout -out $$tmp/key.pem && \
-	  openssl ec -in $$tmp/key.pem -pubout -out $$tmp/public.pem 2>/dev/null && \
-	  kubectl -n honey create secret generic node-agent-direct-jwt --from-file=key.pem=$$tmp/key.pem && \
-	  kubectl -n honey create secret generic node-agent-direct-jwt-pub --from-file=public.pem=$$tmp/public.pem && \
-	  rm -rf $$tmp )
+	NS=honey sh tree/kubescape/ensure-direct-jwt.sh
 	helm upgrade --install kubescape kubescape/kubescape-operator --version $(KUBESCAPE_CHART_VER) -n honey --create-namespace --values tree/kubescape/values.yaml
 	-kubectl apply  -f tree/kubescape/default-rules.yaml
 	-kubectl apply  -f tree/kubescape/collapse-node.yaml

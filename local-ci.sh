@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# local-ci.sh — deploy ClickHouse + Kubescape + Vector into the existing k3s,
+# local-ci.sh — deploy ClickHouse + Kubescape into the existing k3s,
 # then validate that all schemas work end-to-end.
-# Namespaces: socdemo-ch (clickhouse), socdemo (kubescape + vector)
+# Namespaces: socdemo-ch (clickhouse), socdemo (kubescape)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CH_DIR="$SCRIPT_DIR/tree/clickhouse-lab"
-VEC_DIR="$SCRIPT_DIR/tree/vector-lab"
 KS_DIR="$SCRIPT_DIR/tree/kubescape"
 CH_NS="socdemo-ch"
 KS_NS="socdemo"
@@ -96,7 +95,7 @@ check "process_stats insert works" "[ $(kubectl exec -n $CH_NS $CH_POD -- clickh
 kubectl exec -n "$CH_NS" "$CH_POD" -- clickhouse-client -q "INSERT INTO forensic_db.network_stats (time_, pod_id, rx_bytes, tx_bytes, hostname, event_time) VALUES (now64(9), 'test-pod', 4096, 2048, 'node-01', now64(3))"
 check "network_stats insert works" "[ $(kubectl exec -n $CH_NS $CH_POD -- clickhouse-client -q 'SELECT count() FROM forensic_db.network_stats' 2>/dev/null | tr -d '[:space:]') -ge 1 ]"
 
-echo "=== 5/5 Kubescape + Vector ==="
+echo "=== 5/5 Kubescape ==="
 kubectl create ns "$KS_NS" --dry-run=client -o yaml | kubectl apply -f -
 
 # Kubescape
@@ -109,19 +108,11 @@ fi
 kubectl apply -f "$KS_DIR/default-rules.yaml" -n "$KS_NS" 2>/dev/null || true
 kubectl apply -f "$KS_DIR/rule-alert-binding.yaml" -n "$KS_NS" 2>/dev/null || true
 
-# Vector — rewrite the ClickHouse endpoint to point at socdemo-ch namespace
-PATCHED_VALUES=$(mktemp)
-sed "s/clickhouse-forensic-soc-db.clickhouse.svc.cluster.local/clickhouse-forensic-soc-db.$CH_NS.svc.cluster.local/g" "$VEC_DIR/values.yaml" > "$PATCHED_VALUES"
-helm repo add vector https://helm.vector.dev 2>/dev/null || true
-helm upgrade --install vector vector/vector --namespace "$KS_NS" -f "$PATCHED_VALUES" --wait --timeout 120s 2>/dev/null || echo "  vector install may need retry"
-rm -f "$PATCHED_VALUES"
-
 check "kubescape node-agent running" "kubectl get pods -n $KS_NS -l app=node-agent --no-headers 2>/dev/null | grep -q Running"
-check "vector running" "kubectl get pods -n $KS_NS -l app.kubernetes.io/name=vector --no-headers 2>/dev/null | grep -q Running"
 
 echo ""
 echo "========================================"
 echo "Results: $PASS passed, $FAIL failed"
-echo "Namespaces: $CH_NS (clickhouse), $KS_NS (kubescape+vector)"
+echo "Namespaces: $CH_NS (clickhouse), $KS_NS (kubescape)"
 echo "========================================"
 [ "$FAIL" -eq 0 ] || exit 1
