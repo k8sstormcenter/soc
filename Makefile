@@ -1,7 +1,7 @@
 NAME ?= sovereignsoc
 CLUSTER_NAME := $(NAME)
 HELM := $(shell which helm)
-KUBESCAPE_CHART_VER ?= 1.41.0-duckling63
+KUBESCAPE_CHART_VER ?= 1.41.0-duckling64
 
 CURRENT_CONTEXT := $(shell kubectl config current-context)
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
