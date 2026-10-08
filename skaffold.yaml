@@ -159,7 +159,7 @@ deploy:
       # before the release installs. Create-if-absent: a no-op on a second run.
       before:
         - host:
-            command: ["sh", "-c", "kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1; NS=honey sh tree/kubescape/ensure-direct-jwt.sh"]
+            command: ["sh", "-c", "kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1; NS=honey sh tree/kubescape/ensure-direct-jwt.sh && sh tree/kubescape/keep-rules-on-handover.sh"]
             os: [linux, darwin]
       # Retire a vector left from before the direct stream (no-op once gone).
       # Only after node-agent has rolled onto the direct stream, so alerts are

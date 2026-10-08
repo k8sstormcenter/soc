@@ -65,6 +65,7 @@ kubescape:
 	kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f -
 	kubectl create secret docker-registry duckling-pull -n honey --from-file=.dockerconfigjson=$(HOME)/.docker/config.json --dry-run=client -o yaml | kubectl apply -f -
 	NS=honey sh tree/kubescape/ensure-direct-jwt.sh
+	sh tree/kubescape/keep-rules-on-handover.sh
 	helm upgrade --install kubescape kubescape/kubescape-operator --version $(KUBESCAPE_CHART_VER) -n honey --create-namespace --values tree/kubescape/values.yaml
 	-kubectl apply  -f tree/kubescape/default-rules.yaml
 	-kubectl apply  -f tree/kubescape/collapse-node.yaml
