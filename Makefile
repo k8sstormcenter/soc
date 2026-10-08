@@ -73,6 +73,7 @@ kubescape:
 	  rm -rf $$tmp )
 	helm upgrade --install kubescape kubescape/kubescape-operator --version $(KUBESCAPE_CHART_VER) -n honey --create-namespace --values tree/kubescape/values.yaml
 	-kubectl apply  -f tree/kubescape/default-rules.yaml
+	-kubectl apply  -f tree/kubescape/collapse-node.yaml
 	-kubectl apply  -f tree/kubescape/rule-alert-binding.yaml
 	sleep 5
 	-kubectl rollout restart -n honey ds node-agent

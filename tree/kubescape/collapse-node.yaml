@@ -1,0 +1,29 @@
+apiVersion: spdx.softwarecomposition.kubescape.io/v1beta1
+kind: CollapseConfiguration
+metadata:
+  name: node
+spec:
+  openDynamicThreshold: 50
+  endpointDynamicThreshold: 50
+  collapseConfigs:
+    - {prefix: /proc, threshold: 1}
+    - {prefix: /sys/fs/cgroup, threshold: 1}
+    - {prefix: /sys/devices, threshold: 1}
+    - {prefix: /sys/kernel, threshold: 1}
+    - {prefix: /sys/class, threshold: 1}
+    - {prefix: /sys/bus, threshold: 1}
+    - {prefix: /sys/module, threshold: 1}
+    - {prefix: /var/lib/rancher/k3s/agent/containerd, threshold: 1}
+    - {prefix: /var/lib/containerd, threshold: 1}
+    - {prefix: /run/k3s/containerd, threshold: 1}
+    - {prefix: /run/containerd, threshold: 1}
+    - {prefix: /var/lib/kubelet/pods, threshold: 1}
+    - {prefix: /var/lib/kubelet/plugins, threshold: 1}
+    - {prefix: /var/log/pods, threshold: 1}
+    - {prefix: /var/log/containers, threshold: 1}
+    - {prefix: /var/log/journal, threshold: 1}
+    - {prefix: /run/systemd/transient, threshold: 1}
+    - {prefix: /run/systemd/units, threshold: 1}
+    - {prefix: /snap, threshold: 1}
+    - {prefix: /var/lib/snapd, threshold: 1}
+    - {prefix: /tmp, threshold: 5}
