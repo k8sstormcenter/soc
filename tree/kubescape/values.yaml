@@ -2,11 +2,6 @@
 # deploy must create the duckling-pull secret in honey before the node-agent
 # schedules (docker login -u entlein first). See Makefile/skaffold pull-secret step.
 imagePullSecrets: duckling-pull
-# Storage TLS is owned in-cluster by the certgen init containers, so the
-# manifests carry no key material and a repeated deploy changes nothing (the
-# default "template" mints a new CA on every render).
-certificates:
-  strategy: initContainer
 nodeAgent:
   directAlerts:
     enabled: true
