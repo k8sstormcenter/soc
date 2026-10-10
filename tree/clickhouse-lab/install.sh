@@ -2,12 +2,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VECTOR_DIR="$(cd "$SCRIPT_DIR/../vector-lab" 2>/dev/null && pwd)" || VECTOR_DIR=""
 NS="clickhouse"
 CHI="forensic-soc-db"
 KEEPER="forensic-keeper"
-SKIP_OP=false; SKIP_VEC=false
-while [[ $# -gt 0 ]]; do case $1 in --skip-operator) SKIP_OP=true;; --skip-vector) SKIP_VEC=true;; *) echo "Unknown: $1"; exit 1;; esac; shift; done
+SKIP_OP=false
+# --skip-vector is accepted as a no-op: nothing here installs vector any more.
+while [[ $# -gt 0 ]]; do case $1 in --skip-operator) SKIP_OP=true;; --skip-vector) ;; *) echo "Unknown: $1"; exit 1;; esac; shift; done
 
 command -v helm &>/dev/null || { curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash; }
 
@@ -57,12 +57,5 @@ done
 # Schema
 kubectl exec -i -n "$NS" "$CH_POD" -- clickhouse-client --multiquery < "$SCRIPT_DIR/schema.sql"
 
-
-# Vector
-if ! $SKIP_VEC && [[ -n "$VECTOR_DIR" && -f "$VECTOR_DIR/values.yaml" ]]; then
-  helm repo add vector https://helm.vector.dev 2>/dev/null || true
-  helm repo update
-  helm upgrade --install vector vector/vector --namespace honey --create-namespace -f "$VECTOR_DIR/values.yaml" --wait --timeout 120s || echo "Vector install failed"
-fi
 
 echo "ClickHouse ready: $CHI (1x1) in ns/$NS | analyst:changeme-analyst | ingest:changeme-ingest"

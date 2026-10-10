@@ -2,7 +2,16 @@
 # deploy must create the duckling-pull secret in honey before the node-agent
 # schedules (docker login -u entlein first). See Makefile/skaffold pull-secret step.
 imagePullSecrets: duckling-pull
+# soc applies the rendered chart with kubectl, so helm's lookup never sees the
+# live secrets and the default "template" strategy mints new storage TLS on
+# every deploy. initContainer: certgen owns the material in-cluster.
+certificates:
+  strategy: initContainer
 nodeAgent:
+  directAlerts:
+    enabled: true
+    port: 50405
+    jwtPublicKeySecret: node-agent-direct-jwt-pub
   config:
     # Nothing in soc-stack deploys Alertmanager. With a URL set, every rule hit
     # is also a failed POST (DNS: no such host) logged at warn — one per alert.

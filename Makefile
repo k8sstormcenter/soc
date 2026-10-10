@@ -1,7 +1,7 @@
 NAME ?= sovereignsoc
 CLUSTER_NAME := $(NAME)
 HELM := $(shell which helm)
-KUBESCAPE_CHART_VER ?= 1.41.0-duckling46
+KUBESCAPE_CHART_VER ?= 1.41.0-duckling70
 
 CURRENT_CONTEXT := $(shell kubectl config current-context)
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -64,11 +64,12 @@ kubescape:
 	helm repo update
 	kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f -
 	kubectl create secret docker-registry duckling-pull -n honey --from-file=.dockerconfigjson=$(HOME)/.docker/config.json --dry-run=client -o yaml | kubectl apply -f -
+	NS=honey sh tree/kubescape/ensure-direct-jwt.sh
+	sh tree/kubescape/keep-rules-on-handover.sh
 	helm upgrade --install kubescape kubescape/kubescape-operator --version $(KUBESCAPE_CHART_VER) -n honey --create-namespace --values tree/kubescape/values.yaml
 	-kubectl apply  -f tree/kubescape/default-rules.yaml
+	-kubectl apply  -f tree/kubescape/collapse-node.yaml
 	-kubectl apply  -f tree/kubescape/rule-alert-binding.yaml
-	sleep 5
-	-kubectl rollout restart -n honey ds node-agent
 	-kubectl wait --for=condition=ready pod -l app=kubevuln  -n honey --timeout 120s
 	-kubectl wait --for=condition=ready pod -l app=node-agent  -n honey --timeout 120s
 

@@ -1,20 +1,37 @@
 # SOC stack — the whole NON-Pixie environment for the e2e / calibration suite.
 #
-# `skaffold deploy -m soc-stack` brings up ClickHouse -> kubescape -> vector (in
-# that order) on k3s. It is designed to be OVERLAID with:
+# `skaffold deploy -m soc-stack` brings up ClickHouse -> kubescape (in that
+# order) on k3s. node-agent alerts reach ClickHouse and dx over node-agent's
+# direct stream, which dx-daemon consumes; there is no log shipper. It is designed to be OVERLAID with:
 #   - Pixie's native Skaffold (the `pl` namespace: vizier + adaptive_export), and
 #   - the bob java-poc apps Skaffold (bob/example/java-poc, the sample workloads).
 #
-# Ownership: this repo owns honey (kubescape/vector/dx wiring) + clickhouse. It
+# Ownership: this repo owns honey (kubescape/dx wiring) + clickhouse. It
 # does NOT own `pl` (Pixie) or the sample apps (bob) — those compose on top.
 #
 # k3s only for now. Everything references the authoritative in-repo configs
-# (tree/clickhouse-lab, tree/kubescape, tree/vector-lab) — no forked copies.
+# (tree/clickhouse-lab, tree/kubescape) — no forked copies.
 # ---------------------------------------------------------------------------
 apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: soc-clickhouse
+# skaffold stamps a fresh skaffold.dev/run-id on what it deploys. On a pod
+# template that is a template change, so an unchanged tree rolled every pod on
+# every deploy. Denied here so a repeated deploy changes nothing; a new image
+# or config still rolls.
+resourceSelector:
+  deny:
+    - groupKind: DaemonSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Deployment.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: StatefulSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Job.batch
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Service
+      labels: [".metadata.labels"]
 manifests:
   helm:
     releases:
@@ -97,11 +114,27 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: soc-kubescape
+# skaffold stamps a fresh skaffold.dev/run-id on what it deploys. On a pod
+# template that is a template change, so an unchanged tree rolled every pod on
+# every deploy. Denied here so a repeated deploy changes nothing; a new image
+# or config still rolls.
+resourceSelector:
+  deny:
+    - groupKind: DaemonSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Deployment.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: StatefulSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Job.batch
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Service
+      labels: [".metadata.labels"]
 manifests:
   helm:
     releases:
       - name: kubescape
-        remoteChart: https://github.com/k8sstormcenter/helm-charts/releases/download/kubescape-operator-1.41.0-duckling58/kubescape-operator-1.41.0-duckling58.tgz
+        remoteChart: https://github.com/k8sstormcenter/helm-charts/releases/download/kubescape-operator-1.41.0-duckling70/kubescape-operator-1.41.0-duckling70.tgz
         namespace: honey
         createNamespace: true
         valuesFiles:
@@ -112,7 +145,7 @@ manifests:
     - tree/kubescape/default-rules.yaml
     - tree/kubescape/rule-alert-binding.yaml
 profiles:
-  # Standalone consumers (bob's demos) have no vector/ClickHouse path, so the
+  # Standalone consumers (bob's demos) have no ClickHouse/dx path, so the
   # alerts have to reach an Alertmanager or nothing observes them.
   - name: standalone
     patches:
@@ -120,7 +153,21 @@ profiles:
         path: /manifests/helm/releases/0/valuesFiles/-
         value: tree/kubescape/values-standalone.yaml
 deploy:
-  helm: {}
+  helm:
+    hooks:
+      # node-agent mounts the verifier key at start, so the pair must exist
+      # before the release installs. Create-if-absent: a no-op on a second run.
+      before:
+        - host:
+            command: ["sh", "-c", "kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1; NS=honey sh tree/kubescape/ensure-direct-jwt.sh && sh tree/kubescape/keep-rules-on-handover.sh"]
+            os: [linux, darwin]
+      # Retire a vector left from before the direct stream (no-op once gone).
+      # Only after node-agent has rolled onto the direct stream, so alerts are
+      # briefly written twice rather than lost.
+      after:
+        - host:
+            command: ["sh", "tree/kubescape/retire-vector.sh"]
+            os: [linux, darwin]
   kubectl:
     flags:
       apply: ["--server-side", "--force-conflicts"]
@@ -129,41 +176,10 @@ deploy:
         - host:
             command: ["sh", "-c", "kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1; kubectl create secret docker-registry duckling-pull -n honey --from-file=.dockerconfigjson=$HOME/.docker/config.json --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1 || true"]
             os: [linux, darwin]
-      # node-agent loads rules at boot; on redeploy (or if it started before the
-      # rawYaml rules landed) bounce it so R0002-on/R0003-off/R0011-on take effect.
-      after:
-        - host:
-            command: ["sh", "-c", "kubectl -n honey rollout restart ds/node-agent >/dev/null 2>&1 || true"]
-            os: [linux, darwin]
+      # No node-agent restart: its rules watcher picks up the rawYaml rules live.
 ---
-apiVersion: skaffold/v4beta11
-kind: Config
-metadata:
-  name: soc-vector
-requires:
-  - configs: [soc-kubescape]
-manifests:
-  helm:
-    releases:
-      - name: vector
-        repo: https://helm.vector.dev
-        remoteChart: vector
-        # TODO(#230): pin the vector chart version for reproducibility.
-        namespace: honey
-        createNamespace: true
-        valuesFiles:
-          - tree/vector-lab/values.yaml
-  rawYaml:
-    # node-local delivery to dx (#228) — replaces the fragile ${HOST_IP} sink.
-    - tree/vector-lab/dx-daemon-service.yaml
-deploy:
-  helm: {}
-  kubectl:
-    flags:
-      apply: ["--server-side", "--force-conflicts"]
----
-# Entry point: `skaffold deploy -m soc-stack` deploys clickhouse -> kubescape ->
-# vector. soc-kubescape is standalone — `skaffold deploy -m soc-kubescape` brings
+# Entry point: `skaffold deploy -m soc-stack` deploys clickhouse -> kubescape.
+# soc-kubescape is standalone — `skaffold deploy -m soc-kubescape` brings
 # up the detection stack alone, for consumers that do not want the forensic store
 # (add -p standalone to point node-agent at an Alertmanager).
 apiVersion: skaffold/v4beta11
@@ -171,4 +187,4 @@ kind: Config
 metadata:
   name: soc-stack
 requires:
-  - configs: [soc-clickhouse, soc-vector]
+  - configs: [soc-clickhouse, soc-kubescape]
