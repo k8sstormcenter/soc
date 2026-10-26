@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  annotations:
+    deprecated.daemonset.template.generation: '1'
+  name: dx-ktls
+  namespace: honey
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: dx-ktls
+  template:
+    metadata:
+      labels:
+        app: dx-ktls
+    spec:
+      containers:
+      - env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: DX_KTLS_PAYLOAD_MAX
+          value: '16384'
+        - name: DX_KTLS_BODIES
+          value: two-tier
+        - name: DX_KTLS_EXCLUDE_UA
+          value: vector,kubescape,node-agent,storage,synchronizer,operator,dx-daemon,adaptive-export,clickhouse,vizier,pixie
+        - name: DX_ORDERS_CH
+          valueFrom:
+            secretKeyRef:
+              key: http-url
+              name: dx-metastasis-ch
+        image: docker.io/tanzeee/dx-ktls@sha256:b4c34565ad9faf6d0359b866d51cc87eb90599debad157551da365956aedf2a1
+        imagePullPolicy: IfNotPresent
+        name: dx-ktls
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        securityContext:
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /sys/fs/bpf
+          name: sysfsbpf
+      dnsPolicy: ClusterFirst
+      hostPID: true
+      imagePullSecrets:
+      - name: dx-pull
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: dx-daemon
+      serviceAccountName: dx-daemon
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - operator: Exists
+      volumes:
+      - hostPath:
+          path: /sys/fs/bpf
+          type: DirectoryOrCreate
+        name: sysfsbpf
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
