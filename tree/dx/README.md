@@ -4,7 +4,7 @@
 
 | Item | Value |
 |---|---|
-| Image | `docker.io/tanzeee/dx-ktls@sha256:b4c34565ad9faf6d0359b866d51cc87eb90599debad157551da365956aedf2a1` (private; pull secret `dx-pull`; pin owned by AEDX) |
+| Image | `docker.io/tanzeee/dx-ktls:49a3d1e@sha256:4bf6f97df7440e83d171d08c92c7cc7aaf73a77c3021861190be85c6ccc5f69e` (private; pull secret `dx-pull`; pin owned by AEDX) |
 | Namespace / SA | `honey` / `dx-daemon` |
 | Privileges | `privileged`, `hostPID`, hostPath `/sys/fs/bpf`, tolerates all taints |
 | Kernel | needs BTF |
