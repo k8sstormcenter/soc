@@ -33,7 +33,7 @@ spec:
             secretKeyRef:
               key: http-url
               name: dx-metastasis-ch
-        image: docker.io/tanzeee/dx-ktls@sha256:b4c34565ad9faf6d0359b866d51cc87eb90599debad157551da365956aedf2a1
+        image: docker.io/tanzeee/dx-ktls:49a3d1e@sha256:4bf6f97df7440e83d171d08c92c7cc7aaf73a77c3021861190be85c6ccc5f69e
         imagePullPolicy: IfNotPresent
         name: dx-ktls
         resources:
