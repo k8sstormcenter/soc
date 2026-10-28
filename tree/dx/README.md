@@ -16,3 +16,7 @@
 ## Before integrating
 
 `dx_kubelet_stream` is partitioned by `toYYYYMM`. On k3s-1 it reached 73.5 GiB (one month partition 68.4 GiB) and its merges filled the worker disk. Give it a retention or TTL decision before it runs on a cluster with a small data volume.
+
+## Retention
+
+`dx_kubelet_stream`: TTL 24 h (decided 2026-10-28). The TTL belongs in the table DDL the tap creates itself; it is not pre-created from this tree.
