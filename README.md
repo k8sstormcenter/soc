@@ -28,19 +28,19 @@ Why its cool, cause it has adaptive features that allow filtering out the noise:
 
 
 ## Components:
-- pixie: for the 24 hr history of all interesting protocols  
+- pixie (main + out-of-tree): for the 24 hr history of all interesting protocols  
 This allows the reconstruction of the attack paths and the construction of evidence that either corroborates that an attack occured or tells you where an attack failed (e.g the initial breach and pivot might have happened but they failed at the exfiltration)
 
 - pixie cloud: for visualizing the data across all live clusters as well as the forensic database
 
-- kubescape: for a coarse filtering at any given point in time  
+- kubescape (fork): for a coarse filtering at any given point in time  
 This allows anchoring known malicious signals to kick off the investigation
--> you must use a high-contrast [bill of behavior](https://billofbehavior.com) (sbob) to ensure your false negatives are low and you know your blindspots.
+-> you must use a high-contrast [bill of behavior](https://billofbehavior.com) (sbob) to ensure your false negatives are low and you know your blindspots. You can use bobctl to achieve this.
 
 - clickhouse: for saving the data out of band from your cluster
 Sharded by node
 
-- vector: for moving data from A to B  (is in the process of being deprecated)
+
 
 
 ## Backlog
