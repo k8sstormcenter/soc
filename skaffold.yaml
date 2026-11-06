@@ -134,7 +134,9 @@ manifests:
   helm:
     releases:
       - name: kubescape
-        remoteChart: https://github.com/k8sstormcenter/helm-charts/releases/download/kubescape-operator-1.41.0-duckling90/kubescape-operator-1.41.0-duckling90.tgz
+        repo: https://k8sstormcenter.github.io/helm-charts
+        remoteChart: kubescape-operator
+        version: 1.41.0-duckling125
         namespace: honey
         createNamespace: true
         valuesFiles:
@@ -171,12 +173,117 @@ deploy:
   kubectl:
     flags:
       apply: ["--server-side", "--force-conflicts"]
+    # No node-agent restart: its rules watcher picks up the rawYaml rules live.
+---
+# adaptive-export in pl, next to an installed Pixie (see README). Needs
+# PIXIE_API_KEY on the first run; later runs keep the stored secret.
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: soc-adaptive-export
+resourceSelector:
+  deny:
+    - groupKind: DaemonSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Service
+      labels: [".metadata.labels"]
+manifests:
+  rawYaml:
+    - tree/adaptive-export/adaptive-export.yaml
+deploy:
+  kubectl:
+    defaultNamespace: pl
     hooks:
       before:
         - host:
-            command: ["sh", "-c", "kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1; kubectl create secret docker-registry duckling-pull -n honey --from-file=.dockerconfigjson=$HOME/.docker/config.json --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1 || true"]
+            command:
+              - bash
+              - -c
+              - |
+                set -e
+                kubectl -n pl get secret pl-cluster-secrets >/dev/null 2>&1 \
+                  || { echo "ERROR: Pixie is not installed in namespace pl (see README)" >&2; exit 1; }
+                # PL_CLOUD_ADDR must carry an explicit port.
+                CA=$(kubectl -n pl get cm pl-cloud-config -o jsonpath='{.data.PL_CLOUD_ADDR}' 2>/dev/null || true)
+                case "$CA" in
+                  ""|*:*) ;;
+                  *) kubectl -n pl patch cm pl-cloud-config --type merge -p "{\"data\":{\"PL_CLOUD_ADDR\":\"$CA:443\"}}" ;;
+                esac
+                # Seed the secret only when a key is supplied; never overwrite a stored one with nothing.
+                API="${PIXIE_API_KEY:-${PX_API_KEY:-}}"
+                CH_DSN="${AE_CH_DSN:-ingest_writer:changeme-ingest@clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:9000/forensic_db}"
+                if [ -n "$API" ]; then
+                  kubectl -n pl create secret generic pl-adaptive-export-secrets \
+                    --from-literal=pixie-api-key="$API" \
+                    --from-literal=clickhouse-dsn="$CH_DSN" \
+                    --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+                elif ! kubectl -n pl get secret pl-adaptive-export-secrets >/dev/null 2>&1; then
+                  echo "ERROR: export PIXIE_API_KEY (px api-key create) for the first deploy" >&2
+                  exit 1
+                fi
+                # A Service of this name left by the Pixie install selects no adaptive-export pod;
+                # apply merges selectors, so replace it.
+                HAVE=$(kubectl -n pl get svc adaptive-export-control -o jsonpath='{.spec.selector}' 2>/dev/null || true)
+                if [ -n "$HAVE" ] && [ "$HAVE" != '{"name":"adaptive-export"}' ]; then
+                  kubectl -n pl patch svc adaptive-export-control --type=json \
+                    -p='[{"op":"replace","path":"/spec/selector","value":{"name":"adaptive-export"}}]' >/dev/null
+                fi
             os: [linux, darwin]
-      # No node-agent restart: its rules watcher picks up the rawYaml rules live.
+      after:
+        - host:
+            command:
+              - bash
+              - -c
+              - |
+                for i in $(seq 1 20); do
+                  N=$(kubectl -n pl get endpointslice -l kubernetes.io/service-name=adaptive-export-control \
+                        -o jsonpath='{range .items[*]}{range .endpoints[*]}{.addresses[0]}{"\n"}{end}{end}' 2>/dev/null | grep -c . || true)
+                  [ "${N:-0}" -gt 0 ] && { echo "adaptive-export-control: $N endpoint(s)"; exit 0; }
+                  sleep 3
+                done
+                echo "ERROR: adaptive-export-control has no endpoints" >&2; exit 1
+            os: [linux, darwin]
+---
+# dx-daemon in honey. Reads the Kubescape direct alert stream with the keypair
+# from tree/kubescape/ensure-direct-jwt.sh and writes to ClickHouse.
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: soc-dx
+resourceSelector:
+  deny:
+    - groupKind: DaemonSet.apps
+      labels: [".spec.template.metadata.labels", ".metadata.labels"]
+    - groupKind: Service
+      labels: [".metadata.labels"]
+manifests:
+  rawYaml:
+    - tree/dx/dx-daemon.yaml
+deploy:
+  kubectl:
+    hooks:
+      before:
+        - host:
+            command:
+              - bash
+              - -c
+              - |
+                set -e
+                kubectl create ns honey --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+                NS=honey sh tree/kubescape/ensure-direct-jwt.sh
+                JWT=$(kubectl -n pl get secret pl-cluster-secrets -o jsonpath='{.data.jwt-signing-key}' | base64 -d)
+                CID=$(kubectl -n pl get secret pl-cluster-secrets -o jsonpath='{.data.cluster-id}' | base64 -d)
+                CA=$(kubectl -n pl get cm pl-cloud-config -o jsonpath='{.data.PL_CLOUD_ADDR}')
+                API=$(kubectl -n pl get secret pl-adaptive-export-secrets -o jsonpath='{.data.pixie-api-key}' 2>/dev/null | base64 -d)
+                CH_URL="${DX_CH_HTTP_URL:-http://ingest_writer:changeme-ingest@clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:8123/?database=forensic_db}"
+                kubectl -n honey create secret generic dx-vizier-direct \
+                  --from-literal=jwt-signing-key="$JWT" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+                kubectl -n honey create secret generic dx-pixie-auth \
+                  --from-literal=api-key="$API" --from-literal=cluster-id="$CID" --from-literal=cloud-addr="$CA" \
+                  --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+                kubectl -n honey create secret generic dx-metastasis-ch \
+                  --from-literal=http-url="$CH_URL" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+            os: [linux, darwin]
 ---
 # Entry point: `skaffold deploy -m soc-stack` deploys clickhouse -> kubescape.
 # soc-kubescape is standalone — `skaffold deploy -m soc-kubescape` brings
@@ -188,3 +295,12 @@ metadata:
   name: soc-stack
 requires:
   - configs: [soc-clickhouse, soc-kubescape]
+---
+# Public install: `skaffold deploy -m soc-alpha` after Pixie (README, TL;DR).
+# clickhouse -> kubescape -> adaptive-export -> dx.
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: soc-alpha
+requires:
+  - configs: [soc-clickhouse, soc-kubescape, soc-adaptive-export, soc-dx]

@@ -1,0 +1,75 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: dx-daemon, namespace: honey}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dx-daemon
+  namespace: honey
+  labels: {app: dx-daemon}
+spec:
+  selector: {matchLabels: {app: dx-daemon}}
+  template:
+    metadata:
+      labels: {app: dx-daemon}
+    spec:
+      serviceAccountName: dx-daemon
+      tolerations: [{operator: Exists}]
+      terminationGracePeriodSeconds: 35
+      containers:
+      - name: dx-daemon
+        image: ghcr.io/k8sstormcenter/dx-daemon:v0.1.0-alpha.1@sha256:7f227b1eeeb501ce97e65ac251dfa3a96c4bbed0ac04351de75544b33a660c88
+        imagePullPolicy: IfNotPresent
+        ports:
+        - {name: findings, containerPort: 9099, hostPort: 9099}
+        env:
+        - {name: NODE_NAME, valueFrom: {fieldRef: {fieldPath: spec.nodeName}}}
+        - {name: HOST_IP, valueFrom: {fieldRef: {fieldPath: status.hostIP}}}
+        - {name: POD_NAMESPACE, valueFrom: {fieldRef: {fieldPath: metadata.namespace}}}
+        - {name: DX_CAPTURE_POLICY, value: "adaptive_base"}
+        - {name: DX_RECEIVER_TLS, value: "1"}
+        - {name: AE_CONTROL_ADDR, value: "https://adaptive-export-control.pl.svc.cluster.local:9100"}
+        - {name: PX_API_KEY, valueFrom: {secretKeyRef: {name: dx-pixie-auth, key: api-key, optional: true}}}
+        - {name: PX_CLUSTER_ID, valueFrom: {secretKeyRef: {name: dx-pixie-auth, key: cluster-id, optional: true}}}
+        - {name: PX_CLOUD_ADDR, valueFrom: {secretKeyRef: {name: dx-pixie-auth, key: cloud-addr, optional: true}}}
+        - {name: DX_BENCH, value: "pemdirect"}
+        - {name: PL_JWT_SIGNING_KEY, valueFrom: {secretKeyRef: {name: dx-vizier-direct, key: jwt-signing-key, optional: true}}}
+        - {name: DX_VIZIER_DIRECT_ADDR, value: "vizier-query-broker-svc.pl.svc.cluster.local:50300"}
+        - {name: PX_DISABLE_TLS, value: "1"}
+        - {name: DX_CLUSTER_MALIGNANT_HTTP, valueFrom: {secretKeyRef: {name: dx-metastasis-ch, key: http-url, optional: true}}}
+        - {name: DX_PX_TIMEOUT_S, value: "90"}
+        - {name: DX_TELEMETRY_CACHE, value: "1"}
+        - {name: DX_WORKERS, value: "4"}
+        - {name: DX_FOREST_SCOPE, value: "1"}
+        - {name: DX_PRECORRELATE_GRAPH, value: "1"}
+        - {name: DX_NARROW_WINDOW_BEFORE_MS, value: "150"}
+        - {name: DX_NARROW_WINDOW_AFTER_MS, value: "150"}
+        - name: DX_EVIDENCE_GRAPH_CH
+          value: >-
+            http://ingest_writer:changeme-ingest@clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:8123/forensic_db
+        readinessProbe:
+          httpGet: {path: /healthz, port: 9099, scheme: HTTPS}
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        resources:
+          requests: {cpu: 50m, memory: 1Gi}
+          limits: {cpu: "2", memory: 3Gi}
+        volumeMounts:
+        # Signing half of the direct alert stream keypair (tree/kubescape/ensure-direct-jwt.sh).
+        - {name: alert-key, mountPath: /etc/dx/node-agent-direct-jwt, readOnly: true}
+      volumes:
+      - name: alert-key
+        secret: {secretName: node-agent-direct-jwt}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dx-daemon
+  namespace: honey
+spec:
+  selector: {app: dx-daemon}
+  internalTrafficPolicy: Local
+  ports:
+  - {name: findings, port: 9099, targetPort: 9099}
