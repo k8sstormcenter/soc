@@ -56,7 +56,10 @@ THIS IS CURRENTLY NOT PRODUCTION READY and NOT STABLE, there is no governance or
 
 ### TL;DR (k3s playground)
 
-Needs `kubectl`, `helm`, `skaffold` v2, `openssl` and `git`.
+Needs `kubectl`, `helm`, `skaffold` v2, `openssl` and `git`, and nodes with at least
+7 GiB memory: Pixie reserves 2 GiB on every node and ClickHouse 2 GiB on one. The
+default iximiuz k3s playground (4 GiB nodes) is too small; one control plane and one
+worker at 4 CPU / 7 GiB each fit its limits.
 
 1. Pixie, with your own account (sign up in the browser on first login):
 
