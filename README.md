@@ -45,14 +45,13 @@ Sharded by node
 
 ## Backlog
 
-We are looking at a first release end of this summer, so that you can try it out in a compact `all on one k3s` playground
-TODO: make the lab boot in free tier.
-
-THIS IS CURRENTLY NOT PRODUCTION READY and NOT STABLE, there is no governance or openssf scorecard, yet...
+These charts and kustomize artefacts contain alpha-builds. Do NOT use in production at this point in time.
 
 
 
 ## Install
+
+This stack needs a lot (meaning A LOT) of space, it is not performance or memory optimized at this point in time. If you have too many events, it may OOM. The ktls probes, that intercept the k8s-api traffic especially should be turned off unless an external storage-sink is configured (it gets large)
 
 ### TL;DR (k3s playground)
 
