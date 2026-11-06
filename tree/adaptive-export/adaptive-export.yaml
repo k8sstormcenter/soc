@@ -1,0 +1,185 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pl-adaptive-export-service-account
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pl-adaptive-export-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pl-adaptive-export-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pl-adaptive-export-role
+subjects:
+- kind: ServiceAccount
+  name: pl-adaptive-export-service-account
+  namespace: pl
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pl-adaptive-export-cluster-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+# Read-only access to the Kubescape profile CRDs.
+- apiGroups:
+  - spdx.softwarecomposition.kubescape.io
+  resources:
+  - containerprofiles
+  - rogueartifacts
+  verbs:
+  - get
+  - list
+# One ConfigMap, by name.
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  resourceNames:
+  - node-agent-bundle-policy
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pl-adaptive-export-cluster-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pl-adaptive-export-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: pl-adaptive-export-service-account
+  namespace: pl
+---
+# adaptive-export: node-local forensic capture operator. DaemonSet so each pod
+# queries its own node's vizier-pem (pem-direct). Secret seeded per-cluster.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: adaptive-export
+  labels: {name: adaptive-export, plane: control}
+spec:
+  selector:
+    matchLabels: {name: adaptive-export}
+  template:
+    metadata:
+      labels: {name: adaptive-export, plane: control}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - {key: kubernetes.io/os, operator: In, values: [linux]}
+      serviceAccountName: pl-adaptive-export-service-account
+      containers:
+      - name: adaptive-export
+        image: ghcr.io/entlein/ae:v0.1.0-alpha.1@sha256:2c2289b0927d183eda071ce2bc301ce2db77dbe48a183d529c7bf6adc5d9e72b
+        ports:
+        - {name: control, containerPort: 9100, hostPort: 9100}
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: "1", memory: 1Gi}
+        env:
+        - name: HOST_IP
+          valueFrom: {fieldRef: {fieldPath: status.hostIP}}
+        # Profiling listener, bound to loopback: unreachable from the cluster,
+        # reachable through `kubectl port-forward` for a heap or CPU sample.
+        - {name: AE_PPROF_ADDR, value: "127.0.0.1:6061"}
+        - name: ADAPTIVE_VIZIER_DIRECT_ADDR
+          value: "$(HOST_IP):50305"
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom: {secretKeyRef: {name: pl-cluster-secrets, key: jwt-signing-key}}
+        - name: PX_DISABLE_TLS
+          value: "1"
+        - name: PL_NAMESPACE
+          valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+        - name: NODE_NAME
+          valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+        - name: PIXIE_API_KEY
+          valueFrom: {secretKeyRef: {name: pl-adaptive-export-secrets, key: pixie-api-key}}
+        - name: CLICKHOUSE_DSN
+          valueFrom: {secretKeyRef: {name: pl-adaptive-export-secrets, key: clickhouse-dsn}}
+        - name: KUBESCAPE_TABLE
+          value: "kubescape_logs"
+        - name: EXPORT_MODE
+          value: "never"
+        # Control surface: TLS (certs below) and bearer-JWT auth (PL_JWT_SIGNING_KEY).
+        - name: CONTROL_ADDR
+          value: ":9100"
+        - name: ADAPTIVE_PUSH_PIXIE_ROWS
+          value: "true"
+        # Capture is driven by the control surface only; no kubescape_logs poll.
+        - name: ADAPTIVE_TRIGGER_POLL
+          value: "false"
+        # Convert any evidence table still on a plain MergeTree. Leader-only,
+        # and a no-op once every table has been converted.
+        - name: ADAPTIVE_MIGRATE_ENGINES
+          value: "true"
+        - name: ADAPTIVE_RECONCILE
+          value: "true"
+        - name: DEPLOY_TRACEPOINTS
+          value: "true"
+        - name: INSTALL_PRESET_SCRIPTS
+          value: "false"
+        - name: ADAPTIVE_MAX_INFLIGHT_QUERIES_GLOBAL
+          value: "4"
+        - name: ADAPTIVE_ORDER_CHUNK_SEC
+          value: "600"
+        - name: VERBOSE
+          value: "true"
+        volumeMounts:
+        - {name: certs, mountPath: /certs, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          seccompProfile: {type: RuntimeDefault}
+      volumes:
+      - name: certs
+        secret: {secretName: service-tls-certs}
+      securityContext:
+        runAsUser: 10100
+        runAsGroup: 10100
+        fsGroup: 10100
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adaptive-export-control
+spec:
+  selector: {name: adaptive-export}
+  internalTrafficPolicy: Local   # dx reaches its co-located (same-node) AE
+  ports:
+  - {name: control, port: 9100, targetPort: 9100}

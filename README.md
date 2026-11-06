@@ -54,9 +54,41 @@ THIS IS CURRENTLY NOT PRODUCTION READY and NOT STABLE, there is no governance or
 
 ## Install
 
+### TL;DR (k3s playground)
+
+Needs `kubectl`, `helm`, `skaffold` v2, `openssl` and `git`, and nodes with at least
+7 GiB memory: Pixie reserves 2 GiB on every node and ClickHouse 2 GiB on one. The
+default iximiuz k3s playground (4 GiB nodes) is too small; one control plane and one
+worker at 4 CPU / 7 GiB each fit its limits.
+
+1. Pixie, with your own account (sign up in the browser on first login):
+
+```sh
+bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"
+export PX_CLOUD_ADDR=work.soc.k8sstormcenter.com
+px auth login --manual
+px deploy --vizier_version 0.14.19-pemdq1 --pem_memory_request 2Gi --pem_memory_limit 4Gi
+export PIXIE_API_KEY=$(px api-key create -s -d soc)
 ```
-public release, with grant Netidee 7918 is due Nov 2026
+
+2. Everything else (ClickHouse, Kubescape, adaptive-export, dx):
+
+```sh
+git clone https://github.com/k8sstormcenter/soc && cd soc
+skaffold deploy -m soc-alpha
 ```
+
+3. Check:
+
+```sh
+kubectl get pods -n pl; kubectl get pods -n honey; kubectl get pods -n clickhouse
+kubectl -n honey logs ds/dx-daemon --tail=20
+CH=$(kubectl -n clickhouse get pod -l clickhouse.altinity.com/chi=forensic-soc-db -o name | head -1)
+kubectl -n clickhouse exec "$CH" -- clickhouse-client -q "SELECT count() FROM forensic_db.kubescape_logs"
+```
+
+Running `skaffold deploy -m soc-alpha` again changes nothing. Kubescape alone,
+without ClickHouse and Pixie: `skaffold deploy -m soc-kubescape -p standalone`.
 
 
 <img width="1902" height="1139" alt="Screenshot 2026-08-22 at 22 10 12" src="https://github.com/user-attachments/assets/9f796aef-c12f-4bba-b10d-65e3ed46093b" />
