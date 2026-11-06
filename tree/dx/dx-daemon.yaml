@@ -20,7 +20,7 @@ spec:
       terminationGracePeriodSeconds: 35
       containers:
       - name: dx-daemon
-        image: ghcr.io/k8sstormcenter/dx-daemon:v0.1.0-alpha.1@sha256:7f227b1eeeb501ce97e65ac251dfa3a96c4bbed0ac04351de75544b33a660c88
+        image: ghcr.io/entlein/dx:v0.1.0-alpha.1@sha256:7f227b1eeeb501ce97e65ac251dfa3a96c4bbed0ac04351de75544b33a660c88
         imagePullPolicy: IfNotPresent
         ports:
         - {name: findings, containerPort: 9099, hostPort: 9099}

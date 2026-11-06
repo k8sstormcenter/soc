@@ -104,7 +104,7 @@ spec:
       serviceAccountName: pl-adaptive-export-service-account
       containers:
       - name: adaptive-export
-        image: ghcr.io/k8sstormcenter/adaptive-export:v0.1.0-alpha.1@sha256:2c2289b0927d183eda071ce2bc301ce2db77dbe48a183d529c7bf6adc5d9e72b
+        image: ghcr.io/entlein/ae:v0.1.0-alpha.1@sha256:2c2289b0927d183eda071ce2bc301ce2db77dbe48a183d529c7bf6adc5d9e72b
         ports:
         - {name: control, containerPort: 9100, hostPort: 9100}
         resources:
