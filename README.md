@@ -55,16 +55,20 @@ This stack needs a lot (meaning A LOT) of space, it is not performance or memory
 
 ### TL;DR (k3s playground)
 
-Needs `kubectl`, `helm`, `skaffold` v2, `openssl` and `git`, and nodes with at least
+Needs `kubectl`, `helm`, `skaffold` v2, `openssl`, `git` and the kernel-headers for
+the running kernel (pixie) and nodes with at least
 7 GiB memory: Pixie reserves 2 GiB on every node and ClickHouse 2 GiB on one. The
 default iximiuz k3s playground (4 GiB nodes) is too small; one control plane and one
-worker at 4 CPU / 7 GiB each fit its limits.
+worker at 4 CPU / 7 GiB each fit its limits. Make sure that you have enough disk space on
+the machines (~60GB in a small setup).
+
+AMD64 Nodes are not supported at the moment
 
 1. Pixie, with your own account (sign up in the browser on first login):
 
 ```sh
 bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"
-export PX_CLOUD_ADDR=work.soc.k8sstormcenter.com
+export PX_CLOUD_ADDR=soc.k8sstormcenter.com
 px auth login --manual
 px deploy --vizier_version 0.14.19-pemdq1 --pem_memory_request 2Gi --pem_memory_limit 4Gi
 export PIXIE_API_KEY=$(px api-key create -s -d soc)
