@@ -53,18 +53,18 @@ These charts and kustomize artefacts contain alpha-builds. Do NOT use in product
 
 This stack needs a lot (meaning A LOT) of space, it is not performance or memory optimized at this point in time. If you have too many events, it may OOM. The ktls probes, that intercept the k8s-api traffic especially should be turned off unless an external storage-sink is configured (it gets large)
 
-### TL;DR (k3s playground)
+### TL;DR 
 
 Needs `kubectl`, `helm`, `skaffold` v2, `openssl`, `git` and the kernel-headers for
 the running kernel (pixie) and nodes with at least
-7 GiB memory: Pixie reserves 2 GiB on every node and ClickHouse 2 GiB on one. The
-default iximiuz k3s playground (4 GiB nodes) is too small; one control plane and one
-worker at 4 CPU / 7 GiB each fit its limits. Make sure that you have enough disk space on
-the machines (~60GB in a small setup).
+7 GiB memory: Pixie reserves 2 GiB on every node and ClickHouse 2 GiB on one. Make sure that you have enough disk space on
+the machines (~60GB in a small setup, or change the sizes in the values)
 
 AMD64 Nodes are not supported at the moment
 
 1. Pixie, with your own account (sign up in the browser on first login):
+
+#### For kernels < 6.10
 
 ```sh
 bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"
@@ -74,6 +74,15 @@ px deploy --vizier_version 0.14.19-pemdq1 --pem_memory_request 2Gi --pem_memory_
 export PIXIE_API_KEY=$(px api-key create -s -d soc)
 ```
 
+##### For newer kernels 
+```sh
+bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"
+export PX_CLOUD_ADDR=soc.k8sstormcenter.com
+px auth login --manual
+px deploy --vizier_version 0.14.19-pemdq1 --pem_memory_request 2Gi --pem_memory_limit 4Gi \
+  --patches 'vizier-pem:{"spec":{"template":{"spec":{"containers":[{"name":"pem","args":["--stirling_bpf_loop_limit=41"]}]}}}}'
+export PIXIE_API_KEY=$(px api-key create -s -d soc)
+```
 2. Everything else (ClickHouse, Kubescape, adaptive-export, dx):
 
 ```sh
