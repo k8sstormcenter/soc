@@ -63,6 +63,7 @@ alertCRD:
   # detections. soc owns default-rules.yaml + rule-alert-binding.yaml via rawYaml.
   installDefault: false
   scopeClustered: true
+imagePullSecrets: duckling-pull
 clusterName: bobexample
 ksNamespace: honey
 excludeNamespaces: "kubescape,kube-system,kube-public,kube-node-lease,local-path-storage,gmp-system,gmp-public,storm,lightening,cert-manager,kube-flannel,ingress-nginx,honey,clickhouse,chain-loadgen,pl,olm,px-operator,tailscale-system,traefik,cilium-secrets,external-dns"
