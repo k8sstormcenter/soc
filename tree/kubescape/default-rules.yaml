@@ -183,6 +183,8 @@ spec:
       severity: 8
       supportPolicy: false
       tags:
+        - context:kubernetes
+        - context:host
         - dns
         - anomaly
         - networkprofile
