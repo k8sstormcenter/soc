@@ -4,6 +4,13 @@
 certificates:
   strategy: initContainer
 nodeAgent:
+  env:
+    - name: NodeName
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: ENABLE_PROFILER
+      value: "1"
   directAlerts:
     enabled: true
     port: 50405
