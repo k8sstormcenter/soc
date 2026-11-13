@@ -160,6 +160,32 @@ spec:
         - dns
         - anomaly
         - networkprofile
+    - description: Detecting a DNS answer for an allowlisted domain that carries an address outside the addresses the profile lists for that domain.
+      enabled: true
+      expressions:
+        message: >-
+          'Unexpected DNS answer for: ' + event.name + ' addresses: ' +
+          event.addresses.join(',') + ' from: ' + event.containerName
+        ruleExpression:
+          - eventType: dns
+            expression: >-
+              event.rcode == 0 && event.numAnswers > 0 &&
+              cp.is_domain_in_egress(event.containerId, event.name) &&
+              !cp.is_dns_answer_in_egress(event.containerId, event.name,
+              event.addresses)
+        uniqueId: event.comm + '_' + event.name + '_' + event.addresses.join(',')
+      id: R0013
+      isTriggerAlert: true
+      mitreTactic: TA0006
+      mitreTechnique: T1557
+      name: DNS answer outside the profiled addresses
+      profileDependency: 0
+      severity: 8
+      supportPolicy: false
+      tags:
+        - dns
+        - anomaly
+        - networkprofile
     - description: Detecting unexpected access to service account token.
       enabled: true
       expressions:
