@@ -136,7 +136,7 @@ manifests:
       - name: kubescape
         repo: https://k8sstormcenter.github.io/helm-charts
         remoteChart: kubescape-operator
-        version: 1.41.0-duckling143
+        version: 1.41.0-duckling144
         namespace: honey
         createNamespace: true
         valuesFiles:
