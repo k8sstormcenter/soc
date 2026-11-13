@@ -41,6 +41,7 @@ nodeAgent:
       ruleCooldownMaxSize: 20000
 capabilities:
   runtimeDetection: enable
+  hostProfileService: enable
   configurationScan: disable
   nodeScan: disable
   nodeSbomGeneration: disable
