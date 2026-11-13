@@ -145,6 +145,7 @@ spec:
         ruleExpression:
           - eventType: dns
             expression: >-
+              event.rcode == 0 &&
               !event.name.endsWith('.svc.cluster.local.') &&
               !cp.is_domain_in_egress(event.containerId, event.name)
         uniqueId: event.comm + '_' + event.name
@@ -187,6 +188,26 @@ spec:
         - context:host
         - dns
         - anomaly
+        - networkprofile
+    - description: "Detecting non-resolving DNS names that carry a long label, the shape of data smuggled in DNS queries."
+      enabled: true
+      expressions:
+        message: "'Non-resolving DNS name with a long label: ' + event.name + ' from ' + event.comm"
+        ruleExpression:
+          - eventType: dns
+            expression: "event.rcode == 3 && !event.name.endsWith('.cluster.local.') && !event.name.endsWith('.in-addr.arpa.') && event.name.split('.').exists(l, size(l) >= 30) && !cp.is_domain_in_egress(event.containerId, event.name)"
+        uniqueId: "event.comm + '_' + event.name"
+      id: R1032
+      isTriggerAlert: true
+      mitreTactic: TA0010
+      mitreTechnique: "T1048.003"
+      name: "DNS exfiltration attempt"
+      profileDependency: 0
+      severity: 8
+      supportPolicy: false
+      tags:
+        - dns
+        - exfiltration
         - networkprofile
     - description: Detecting unexpected access to service account token.
       enabled: true
@@ -342,6 +363,7 @@ spec:
               && !cp.was_address_port_protocol_in_egress(event.containerId, event.dstAddr, event.dstPort, event.proto)
               && !cp.was_selector_in_egress(event.containerId, event.dstNamespace, event.dstPodLabels, event.dstPort, event.proto)
               && !cp.is_host_peer_egress(event.containerId, event.dstAddr, event.dstPort, event.proto)
+              && !cp.was_address_port_protocol_resolved_from_egress_domain(event.containerId, event.dstAddr, event.dstPort, event.proto)
         uniqueId: event.dstAddr + '_' + string(event.dstPort) + '_' + event.proto
       id: R0011
       isTriggerAlert: true

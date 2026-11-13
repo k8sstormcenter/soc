@@ -43,6 +43,7 @@ spec:
     - ruleName: "Linux Capabilities Anomalies in container"
     - ruleName: "DNS Anomalies in container"
     - ruleName: "DNS answer outside the profiled addresses"
+    - ruleName: "DNS exfiltration attempt"
     - ruleName: "Unexpected service account token access"
     - ruleName: "Workload uses Kubernetes API unexpectedly"
     - ruleName: "Process executed from malicious source"
