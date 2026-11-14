@@ -27,7 +27,6 @@ nodeAgent:
     maxLearningPeriod: 24h
     learningPeriod: 10m
     updatePeriod: 10000m
-    networkServiceResolution: true
     # Cooldown is OFF and stays off. Suppression hides false positives instead
     # of removing them; we deal with them by authoring good profiles and by
     # fixing the auto-learning, and every rule hit has to be emitted for the
@@ -49,21 +48,8 @@ nodeAgent:
 capabilities:
   runtimeDetection: enable
   hostProfileService: enable
-  configurationScan: disable
-  nodeScan: disable
   nodeSbomGeneration: disable
-  vulnerabilityScan: disable
-  relevancy: disable
   admissionController: disable
-  # disable: soc runs OFFLINE (no kubescape cloud backend, .Values.server empty), so
-  # the operator renders networkStreamingEnabled=FALSE no matter what this says — it
-  # even emits a capabilityWarning to that effect. So this is a NO-OP for detection
-  # (DNS/network events reach the rule engine via the always-on paths; R0005/R0011
-  # fire regardless). Leaving it "enable" only makes node-agent try to init a stream
-  # http exporter with no URL -> "InitExporters: URL is required" warning every boot.
-  # disable stops that useless init and keeps the node-agent log clean. Verified on
-  # rig 6a749a2b via operator regen + full bobctl attack.
-  networkEventsStreaming: disable
 alertCRD:
   # false: soc deploys via skaffold (unordered helm/kubectl apply), so the chart's
   # own upstream ap.*/nn.* default rules would race and WIN over soc's cp.* rawYaml
