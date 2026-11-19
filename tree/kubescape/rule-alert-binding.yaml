@@ -49,6 +49,7 @@ spec:
     - ruleName: "Drifted process executed"
     - ruleName: "Disallowed ssh connection"
     - ruleName: "Fileless execution detected"
+    - ruleName: "Process tries to escape container"
     - ruleName: "Crypto miner launched"
     - ruleName: "Process executed from mount"
     - ruleName: "Crypto Mining Related Port Communication"
