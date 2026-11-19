@@ -3,6 +3,42 @@ apiVersion: v1
 kind: ServiceAccount
 metadata: {name: dx-daemon, namespace: honey}
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: dx-daemon-kubescape-reader}
+rules:
+- apiGroups: ["spdx.softwarecomposition.kubescape.io"]
+  resources: ["containerprofiles", "rogueartifacts"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: dx-daemon-kubescape-reader}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: dx-daemon-kubescape-reader}
+subjects: [{kind: ServiceAccount, name: dx-daemon, namespace: honey}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: dx-daemon-kssync, namespace: honey}
+rules:
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  resourceNames: ["dx-kssync"]
+  verbs: ["get", "update"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["node-agent-bundle-policy"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: dx-daemon-kssync, namespace: honey}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: dx-daemon-kssync}
+subjects: [{kind: ServiceAccount, name: dx-daemon, namespace: honey}]
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
