@@ -475,7 +475,7 @@ spec:
           - eventType: kmod
             expression: >-
               event.syscallName == 'init_module' || event.syscallName ==
-              'finit_module'
+              'finit_module' || event.syscallName == 'request_module'
         uniqueId: event.comm + '_' + event.syscallName + '_' + event.module
       id: R1002
       isTriggerAlert: true
