@@ -35,6 +35,7 @@ spec:
         - "traefik"
         - "cilium-secrets"
         - "external-dns"
+        - "otel-demo"
   rules:
     - ruleName: "Unexpected process launched"
     - ruleName: "Unexpected process arguments"
