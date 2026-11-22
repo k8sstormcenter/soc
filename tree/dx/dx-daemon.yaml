@@ -39,6 +39,21 @@ metadata: {name: dx-daemon-kssync, namespace: honey}
 roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: dx-daemon-kssync}
 subjects: [{kind: ServiceAccount, name: dx-daemon, namespace: honey}]
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: dx-daemon-signing-key, namespace: pl}
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["pl-cluster-secrets"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: dx-daemon-signing-key, namespace: pl}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: dx-daemon-signing-key}
+subjects: [{kind: ServiceAccount, name: dx-daemon, namespace: honey}]
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -56,7 +71,7 @@ spec:
       terminationGracePeriodSeconds: 35
       containers:
       - name: dx-daemon
-        image: ghcr.io/entlein/dx:v0.1.0-alpha.1@sha256:7f227b1eeeb501ce97e65ac251dfa3a96c4bbed0ac04351de75544b33a660c88
+        image: ghcr.io/entlein/dx:v0.1.0-alpha.2@sha256:9060bc9940cf41c6971f388e05ff0781ba79637efff9649dffbcd9177d4724a9
         imagePullPolicy: IfNotPresent
         ports:
         - {name: findings, containerPort: 9099, hostPort: 9099}
