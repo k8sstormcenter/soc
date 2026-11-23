@@ -104,7 +104,7 @@ spec:
       serviceAccountName: pl-adaptive-export-service-account
       containers:
       - name: adaptive-export
-        image: ghcr.io/entlein/ae:v0.1.0-alpha.3@sha256:fd7449ffefdbe82e4068ebc2663b9f97166469465ae51e2dd4def2c690a53556
+        image: ghcr.io/entlein/ae:v0.1.0-alpha.5@sha256:32e60660a8a06a5120384ecbb139798cba37d756a4f28daa6db4bd7021f795df
         ports:
         - {name: control, containerPort: 9100, hostPort: 9100}
         resources:
@@ -120,6 +120,10 @@ spec:
           value: "$(HOST_IP):50305"
         - name: PL_JWT_SIGNING_KEY
           valueFrom: {secretKeyRef: {name: pl-cluster-secrets, key: jwt-signing-key}}
+        # The key above is read once at start. The mounted copy below is kept
+        # current by the kubelet when the secret is replaced.
+        - name: ADAPTIVE_JWT_KEY_FILE
+          value: /var/run/pl-cluster-secrets/jwt-signing-key
         - name: PX_DISABLE_TLS
           value: "1"
         - name: PL_NAMESPACE
@@ -160,6 +164,7 @@ spec:
           value: "true"
         volumeMounts:
         - {name: certs, mountPath: /certs, readOnly: true}
+        - {name: signing-key, mountPath: /var/run/pl-cluster-secrets, readOnly: true}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities: {drop: [ALL]}
@@ -167,6 +172,10 @@ spec:
       volumes:
       - name: certs
         secret: {secretName: service-tls-certs}
+      - name: signing-key
+        secret:
+          secretName: pl-cluster-secrets
+          items: [{key: jwt-signing-key, path: jwt-signing-key}]
       securityContext:
         runAsUser: 10100
         runAsGroup: 10100
