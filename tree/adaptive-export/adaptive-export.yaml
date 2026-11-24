@@ -161,7 +161,7 @@ spec:
         - name: ADAPTIVE_ORDER_CHUNK_SEC
           value: "600"
         - name: VERBOSE
-          value: "true"
+          value: "false"
         volumeMounts:
         - {name: certs, mountPath: /certs, readOnly: true}
         - {name: signing-key, mountPath: /var/run/pl-cluster-secrets, readOnly: true}
