@@ -90,20 +90,6 @@ The dx tables stay empty until the first alert fires. That is expected: dx only 
 
 Then open the Pixie cloud in your browser, select your cluster and pick a view whose name starts with `dx/`. See [Cockpit views](cockpit.html).
 
-## Change the default passwords
-
-The stack creates two ClickHouse users with default passwords: `forensic_analyst` (read only, used by the cockpit views) and `ingest_writer` (used by the adaptive export and dx). Both accept connections from any network address. Before you use the stack beyond a test cluster:
-
-1. Set new passwords for both users in `tree/clickhouse-lab/installation.yaml`.
-2. Put the new `ingest_writer` password into the `DX_EVIDENCE_GRAPH_CH` URL in `tree/dx/dx-daemon.yaml`.
-3. Before `skaffold deploy`, export the connection strings with the new password:
-   ```sh
-   export AE_CH_DSN='ingest_writer:<password>@clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:9000/forensic_db'
-   export DX_CH_HTTP_URL='http://ingest_writer:<password>@clickhouse-forensic-soc-db.clickhouse.svc.cluster.local:8123/?database=forensic_db'
-   ```
-   The adaptive export only picks up `AE_CH_DSN` when `PIXIE_API_KEY` is set in the same run.
-4. In the cockpit views, set the `clickhouse_dsn` argument to the `forensic_analyst` user with its new password.
-
 ## Sensor only
 
 To run detection without ClickHouse and Pixie:
