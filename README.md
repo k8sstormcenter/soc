@@ -1,6 +1,8 @@
 
 # Kubernetes StormCenter: Find runtime threats -- store only the evidence
 
+**Documentation: https://k8sstormcenter.github.io/soc/**
+
 
 <img width="5026" height="2000" alt="SOCOverview" src="https://github.com/user-attachments/assets/424956cc-b4ba-404f-bb63-c464b9e74730" />
 
@@ -60,7 +62,7 @@ the running kernel (pixie) and nodes with at least
 7 GiB memory: Pixie reserves 2 GiB on every node and ClickHouse 2 GiB on one. Make sure that you have enough disk space on
 the machines (~60GB in a small setup, or change the sizes in the values)
 
-AMD64 Nodes are not supported at the moment
+ARM64 nodes are not supported at the moment (the dx image is built for amd64 only)
 
 1. Pixie, with your own account (sign up in the browser on first login):
 
