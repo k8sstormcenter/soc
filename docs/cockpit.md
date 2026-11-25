@@ -22,10 +22,10 @@ The time range is set by `start_time` at the top right. Most views show the last
 
 ## Shadow traces: first all, then one
 
-Open `dx/shadow_trace` with `shadow_id` left empty. The address has this form:
+Open `dx/shadow_trace` with `shadow_id` left empty, for example:
 
 ```
-https://<your Pixie cloud>/live/clusters/<cluster>?clickhouse_dsn=forensic_analyst%3A<password>%40clickhouse-forensic-soc-db.clickhouse.svc.cluster.local%3A9000%2Fforensic_db&container=&graph_leave_out=stack_trace&leave_out=stack_trace&live_window=-30m&script=dx%2Fshadow_trace&shadow_id=&start_time=-5m
+https://work.soc.k8sstormcenter.com/live/clusters/garden?clickhouse_dsn=forensic_analyst%3Achangeme-analyst%40clickhouse-forensic-soc-db.clickhouse.svc.cluster.local%3A9000%2Fforensic_db&container=&graph_leave_out=stack_trace&leave_out=stack_trace&live_window=-30m&script=dx%2Fshadow_trace&shadow_id=&start_time=-5m
 ```
 
 The **Shadows** table then lists every trace: when it opened, the last epoch, pod, container, rogue state, state, profile, workload kind, host and shadow ID.
