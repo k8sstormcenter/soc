@@ -67,7 +67,7 @@ This installs, in this order:
 | Step | Component | Namespace |
 |---|---|---|
 | 1 | ClickHouse operator and the forensic database `forensic-soc-db` with the `forensic_db` schema | `clickhouse` |
-| 2 | Kubescape operator (k8sstormcenter build of the chart) with the SOC rule set and rule binding | `honey` |
+| 2 | Runtime sensor operator (k8sstormcenter build of the chart) with the SOC rule set and rule binding | `honey` |
 | 3 | Adaptive export, one per node, next to Pixie | `pl` |
 | 4 | dx-daemon, one per node | `honey` |
 
@@ -84,7 +84,7 @@ CH=$(kubectl -n clickhouse get pod -l clickhouse.altinity.com/chi=forensic-soc-d
 kubectl -n clickhouse exec "$CH" -- clickhouse-client -q "SELECT count() FROM forensic_db.kubescape_logs"
 ```
 
-All pods should be `Running`. The count grows once Kubescape raises alerts.
+All pods should be `Running`. The count grows once the sensor raises alerts.
 
 The dx tables stay empty until the first alert fires. That is expected: dx only collects evidence for alerts. See [How it works](how-it-works.html).
 
@@ -104,7 +104,7 @@ The stack creates two ClickHouse users with default passwords: `forensic_analyst
    The adaptive export only picks up `AE_CH_DSN` when `PIXIE_API_KEY` is set in the same run.
 4. In the cockpit views, set the `clickhouse_dsn` argument to the `forensic_analyst` user with its new password.
 
-## Kubescape only
+## Sensor only
 
 To run detection without ClickHouse and Pixie:
 

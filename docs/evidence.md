@@ -36,7 +36,7 @@ kubectl -n clickhouse exec -it "$CH" -- clickhouse-client
 ```sql
 SHOW TABLES FROM forensic_db;
 
--- how many alerts Kubescape has written
+-- how many alerts the sensor has written
 SELECT count() FROM forensic_db.kubescape_logs;
 
 -- what an order looks like

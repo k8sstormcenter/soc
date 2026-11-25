@@ -58,7 +58,7 @@ coding agent ── pushes deploy-iterN.yaml ──►  manifest repo
 platform agent ◄── adr_findings / MCP ── harness/loop.sh N
                                            1. record time (since)
                                            2. apply manifest
-                                           3. static scan (kubescape)
+                                           3. static scan
                                            4. wait until every pod is ≥ 210 s old
                                            5. put load on the app
                                            6. evaluate all ADRs
@@ -68,7 +68,7 @@ platform agent ◄── adr_findings / MCP ── harness/loop.sh N
 
 One iteration is one run of `harness/loop.sh <N> [namespace] [manifest]` (defaults: namespace `commons-grid`, manifest `deploy-iter<N>.yaml`). The script:
 
-1. Waits until the Kubescape sensor DaemonSet `honey/node-agent` is rolled out.
+1. Waits until the sensor DaemonSet `honey/node-agent` is rolled out.
 2. Records the start time in `artefacts/iter<N>-since` and applies the manifest.
 3. Starts a static scan in the background: `compliance/scan.sh` runs `kubescape scan framework AllControls` on the namespace.
 4. Waits until the youngest running pod is older than the warm-up (`WARMUP`, default 210 s). Network rules are only judged after this point.
@@ -102,8 +102,8 @@ From `adr/README.md`:
 | point | when | mechanism | what it sees |
 |---|---|---|---|
 | admission | before the pod exists | Kyverno mutate | the manifest: tier label, profile binding |
-| static | any time | the pod spec; `kubescape scan` controls | what was declared |
-| runtime | while the container runs | Kubescape node-agent (eBPF) + the tier ContainerProfile (SBOB) | processes, files, DNS, capabilities, network edges the profile does not declare |
+| static | any time | the pod spec; static scan controls | what was declared |
+| runtime | while the container runs | node-agent (eBPF) + the tier ContainerProfile (SBOB) | processes, files, DNS, capabilities, network edges the profile does not declare |
 | wire | while traffic flows | Pixie protocol tracers; the TLS tap for decrypted bodies | source, destination, port, path, encrypted or not; request and response bodies |
 
 ### Tier profiles (SBOBs) and admission
@@ -115,7 +115,7 @@ The platform cannot know the application in advance. It works with tiers: fronte
 - `kyverno/00-kyverno-rbac.yaml` lets Kyverno read and write ContainerProfiles.
 - `sbobs/cp-tier-*.yaml` are the five tier profiles, built by `sbobs/compose.sh` from `sbobs/fragments/`. Each profile allows any process and any file. It still alerts on network edges the tier may not use, on capabilities outside a short list, on runtime tooling and package installs (`subtract-runtime-tooling.yaml`), on sensitive files (`subtract-sensitive-files.yaml`), and, outside the backend tier, on the ServiceAccount token (`subtract-cluster-credentials.yaml`).
 
-The Kyverno folder contains mutate and generate policies only. Where an ADR names `kyverno.validate` as its enforcement point, the harness checks that ADR from the pod spec and the kubescape scan.
+The Kyverno folder contains mutate and generate policies only. Where an ADR names `kyverno.validate` as its enforcement point, the harness checks that ADR from the pod spec and the static scan.
 
 The architecture prescribes these edges (`compliance/adrs.yaml`, `topology:`). Traffic on them is never a tier violation:
 
@@ -139,19 +139,19 @@ There are 25 ADRs. Numbers 0008, 0009 and 0015 do not exist in `adr/`. ADR-0001 
 | 0003 | Only the backend tier holds cluster credentials | accepted | pod spec, runtime |
 | 0004 | Images are immutable at runtime; nothing is installed after build | accepted | pod spec, runtime |
 | 0005 | Every workload is classified and bound to its tier profile; an unrecognised one is quarantined | accepted | pod labels, runtime |
-| 0006 | Workloads run as non-root | accepted | pod spec, kubescape scan, runtime |
+| 0006 | Workloads run as non-root | accepted | pod spec, static scan, runtime |
 | 0007 | A profile wildcard never covers a protected path that the profile does not also subtract | accepted | tier profiles |
 | 0010 | Every backend request is authenticated by the platform identity provider | proposed | evaluator probes, served page |
 | 0011 | No plaintext on the wire | proposed | Service, Ingress, wire |
 | 0012 | Metrics are served on a dedicated port, scraped only by the platform | proposed | pod spec, evaluator probes, wire |
 | 0013 | Every workload declares resources, probes and security context | proposed | pod spec |
-| 0014 | Images are pinned by digest, signed; no latest | proposed | pod spec, kubescape scan |
-| 0016 | Credentials are per workload, short-lived, never in environment variables or manifests | proposed | pod spec, Secrets, kubescape scan |
-| 0017 | A ServiceAccount holds only the permissions its code uses; nothing is bound to default | proposed | RBAC, runtime, kubescape scan |
-| 0018 | Unprivileged; no host path, no kernel module, no access to the cloud metadata API | proposed | pod spec, NetworkPolicy, runtime, wire, kubescape scan |
+| 0014 | Images are pinned by digest, signed; no latest | proposed | pod spec, static scan |
+| 0016 | Credentials are per workload, short-lived, never in environment variables or manifests | proposed | pod spec, Secrets, static scan |
+| 0017 | A ServiceAccount holds only the permissions its code uses; nothing is bound to default | proposed | RBAC, runtime, static scan |
+| 0018 | Unprivileged; no host path, no kernel module, no access to the cloud metadata API | proposed | pod spec, NetworkPolicy, runtime, wire, static scan |
 | 0019 | Reachable only through the platform's tailnet exposure of the frontend Service | proposed | Service, Ingress, NetworkPolicy, pod spec |
 | 0020 | Every image carries signed SLSA provenance from the platform build workflow | proposed | registry lookup per digest (provenance, signature) |
-| 0021 | Every image publishes an SBOM and carries no critical or exploitable known vulnerability | proposed | registry lookup (SBOM), kubevuln |
+| 0021 | Every image publishes an SBOM and carries no critical or exploitable known vulnerability | proposed | registry lookup (SBOM), vulnerability scan |
 | 0022 | Nothing is downloaded, installed or compiled after the container starts | proposed | runtime |
 | 0023 | The namespace declares a record of processing (ConfigMap `gdpr-processing`) | proposed | ConfigMap |
 | 0024 | The API and the wire carry no personal data beyond what is declared | proposed | `/openapi.json`, decrypted bodies |
@@ -165,14 +165,13 @@ What the evidence names mean:
 | evidence | where it comes from |
 |---|---|
 | pod spec, pod labels, Service, Ingress, NetworkPolicy, Secrets, RBAC, tier profiles | `kubectl` reads of live objects |
-| kubescape scan | `compliance/scan.sh` → `/tmp/AllControls-<ns>.json` |
+| static scan | `compliance/scan.sh` → `/tmp/AllControls-<ns>.json` |
 | runtime | node-agent detections in ClickHouse `forensic_db.kubescape_logs` (for example R0004 capabilities, R0011 unexpected egress, R0012 unexpected ingress) |
 | wire | Pixie `http_events`, `pgsql_events`, `conn_stats` in ClickHouse |
 | decrypted bodies | the TLS tap (`platform/dx-ktls-openssl.yaml`) → `forensic_db.dx_kubelet_stream` with `source='openssl'`, plus Pixie `http_events` / `pgsql_events` |
 | evaluator probes | HTTP requests the evaluator sends: no token, a garbage token, a valid platform token; `/metrics` on the application port. In-cluster probe pods come from `platform/adr-probe.sh` |
 | served page | the HTML/JS the frontend serves (API calls, auth markers) |
 | registry lookup | referrers next to each image digest (provenance, signature, SBOM); verification needs `cosign` |
-| kubevuln | Kubescape `vulnerabilitymanifestsummaries`; "relevant" means the vulnerable package is loaded at runtime |
 | evaluator canary | the evaluator creates a synthetic subject through the API, deletes it, and reads it back |
 
 ### Statuses, owners and discounts
@@ -319,7 +318,7 @@ In iterations 0 to 2 most counted findings came from the pod spec, Services and 
 
 ### What runtime and wire evidence found that static checks did not
 
-Each item below was found from the running system: sensor events, Pixie or TLS-tap traffic, or the evaluator's own requests. None of these findings came from the pod spec, the Kubernetes objects or the kubescape scan.
+Each item below was found from the running system: sensor events, Pixie or TLS-tap traffic, or the evaluator's own requests. None of these findings came from the pod spec, the Kubernetes objects or the static scan.
 
 - **Plaintext between tiers (ADR-0011), iterations 3 and 4.** The Services were `ClusterIP`, so the Service check found nothing. Pixie recorded plaintext HTTP (`encrypted=0`) from the frontend to the backend on port 8000 and from the load namespace to the frontend on port 8080: 13 counted findings out of 55 wire rows in iteration 3, 6 findings out of 50 wire rows in iteration 4. The backend moved to TLS on 8443 in iteration 5. In iterations 1 and 2 this ADR was `NOT_OBSERVED`, because no wire rows were exported for the namespace (a platform-side issue named in `feedback/iter1-feedback.md`). Files: `artefacts/kpi-commons-grid-iter3.json`, `artefacts/kpi-commons-grid-iter4.json`, `feedback/iter3-feedback.md`, `feedback/iter4-feedback.md`.
 - **Capability events in the database container (ADR-0006), iterations 2 and 8.** In both manifests the `postgres` container declared `runAsNonRoot: true`, `runAsUser: 70`, `allowPrivilegeEscalation: false` and `capabilities.drop: [ALL]`, and the pod spec checks passed. The sensor rule R0004 ("Unexpected capability used") still fired in that container: 1 finding in iteration 2 (`CAP_SETUID` by `bash`), 8 findings in iteration 8 (`CAP_SETUID`, `CAP_SETGID`, `CAP_FOWNER` by the image entrypoint and `bash`). The evaluator's text for these findings is "it starts as root and drops"; the feedback names the postgres entrypoint (`docker-entrypoint.sh`/`gosu`). Iteration 9 no longer runs the image entrypoint: an `initdb` init container prepares the data directory and the main container starts PostgreSQL directly. ADR-0006 was compliant from then on. Files: `artefacts/kpi-commons-grid-iter2.json`, `artefacts/kpi-commons-grid-iter8.json`, `feedback/iter8-feedback.md`, `deploy-iter8.yaml`, `deploy-iter9.yaml`.
@@ -359,10 +358,10 @@ The soc stack, installed by the TL;DR section of the [soc README](https://github
 
 - Tools: `kubectl`, `helm`, `skaffold` v2, `openssl`, `git`, and kernel headers for the running kernel (Pixie).
 - Nodes with at least 7 GiB memory (Pixie reserves 2 GiB on every node, ClickHouse 2 GiB on one) and about 60 GB disk in a small setup.
-- Pixie deployed against the soc cloud (`PX_CLOUD_ADDR=soc.k8sstormcenter.com`, `--vizier_version 0.14.19-pemdq1`), then `skaffold deploy -m soc-alpha` for ClickHouse, Kubescape, the adaptive exporter and dx.
+- Pixie deployed against the soc cloud (`PX_CLOUD_ADDR=soc.k8sstormcenter.com`, `--vizier_version 0.14.19-pemdq1`), then `skaffold deploy -m soc-alpha` for ClickHouse, the runtime sensor, the adaptive exporter and dx.
 - Check: pods in namespaces `pl`, `honey` and `clickhouse` are running, and `SELECT count() FROM forensic_db.kubescape_logs` returns rows.
 
-ADR-0021 reads results from Kubescape's vulnerability scanner (kubevuln). The trial report enabled it for its second run (`reports/slsa-gdpr-trial-2026-11-06.md`). On soc `main`, `tree/kubescape/values.yaml` sets `capabilities.vulnerabilityScan: disable` and `capabilities.relevancy: disable` (checked 2026-11-25), so it has to be switched on.
+ADR-0021 also reads results from the sensor's vulnerability scan. The trial report enabled the scan for its second run (`reports/slsa-gdpr-trial-2026-11-06.md`). On soc `main`, `tree/kubescape/values.yaml` sets `capabilities.vulnerabilityScan: disable` and `capabilities.relevancy: disable` (checked 2026-11-25), so it has to be switched on.
 
 Platform components the harness expects (from `platform/`, the manifests and the `demo` branch README):
 
@@ -373,7 +372,7 @@ Platform components the harness expects (from `platform/`, the manifests and the
 - A namespace `monitoring` (the platform scrapes the metrics ports from there).
 - Node-agent rule R0002 enabled in the stack's default rules (ADR-0004; `demo` branch README).
 
-On the machine that runs the harness: `kubectl` access to the cluster, `python3` with PyYAML, the kubescape CLI (`compliance/scan.sh` installs it if missing), and optionally `cosign` (without it, provenance is reported as "not verifiable").
+On the machine that runs the harness: `kubectl` access to the cluster, `python3` with PyYAML, the scanner CLI that `compliance/scan.sh` installs if missing, and optionally `cosign` (without it, provenance is reported as "not verifiable").
 
 ### Commands
 

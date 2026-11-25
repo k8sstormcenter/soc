@@ -21,18 +21,18 @@ Kubernetes StormCenter is a security operations center (SOC) for Kubernetes that
 
 | Part | Job |
 |---|---|
-| [Kubescape](https://kubescape.io) node-agent | Watches every container with eBPF and raises an alert when a workload does something outside its behavior profile. |
+| Runtime sensor (node-agent from the [Kubescape](https://kubescape.io) project) | Watches every container with eBPF and raises an alert when a workload does something outside its behavior profile. |
 | [Pixie](https://px.dev) | Records recent network traffic, DNS, database protocols, process events and stack traces on each node. |
 | Adaptive export and dx | When an alert fires, collect the matching Pixie data for the pods involved and link it into an evidence graph. |
 | [ClickHouse](https://clickhouse.com) | Stores the evidence, in your cluster. |
 | Pixie cloud | Shows the [cockpit views](cockpit.html) in the browser. |
 
-![Architecture: Kubescape node-agent and Pixie on every node feed adaptive storage, which writes evidence to ClickHouse shards; the Pixie UI shows alerts, profiles and graphs](img/architecture.png)
+![Architecture: the runtime sensor (node-agent) and Pixie on every node feed adaptive storage, which writes evidence to ClickHouse shards; the Pixie UI shows alerts, profiles and graphs](img/architecture.png)
 
 ## Why
 
 - **Your data stays with you.** Everything that is collected is written to ClickHouse in your own cluster.
-- **You store evidence, not everything.** Only the data around an alert is written. In three attack scenarios this stored 96.3 % to 99.75 % fewer rows than full export (see [How it works](how-it-works.html#how-much-less-data)).
+- **You store evidence, not everything.** Only the data around an alert is written.
 - **Alerts come with proof.** Each alert leads to the network, process and protocol records that show what happened, or where an attack stopped.
 
 ## Get started
@@ -46,4 +46,4 @@ The page [Governing agent-written code](adr-harness.html) shows the same stack u
 
 ## Thanks
 
-This stack builds on the work of the Kubescape and Pixie maintainers. Our changes to both go upstream wherever the maintainers accept them.
+This stack builds on the work of the upstream maintainers of its components. Our changes go upstream wherever the maintainers accept them.
