@@ -33,7 +33,7 @@ kubectl -n pl logs ds/adaptive-export --tail=50
 
 ## The dx tables are empty
 
-On a quiet cluster this is expected. dx only collects evidence when an alert fires, and Kubescape only raises alerts after it has learned a workload's profile (at least 10 minutes after the workload starts). Wait for the learning period, then do something the workload never did during learning, for example start a shell in its container. The tables fill within about a minute of the alert.
+On a quiet cluster this is expected. dx only collects evidence when an alert fires, and the sensor only raises alerts after it has learned a workload's profile (at least 10 minutes after the workload starts). Wait for the learning period, then do something the workload never did during learning, for example start a shell in its container. The tables fill within about a minute of the alert.
 
 If alerts arrive in `kubescape_logs` but the dx tables stay empty, read the dx log:
 
