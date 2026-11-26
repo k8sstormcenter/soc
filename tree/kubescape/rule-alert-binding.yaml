@@ -36,6 +36,82 @@ spec:
         - "cilium-secrets"
         - "external-dns"
         - "otel-demo"
+  podSelector:
+    matchExpressions:
+      - key: "kubescape.io/user-defined-profile"
+        operator: "DoesNotExist"
+  rules:
+    - ruleName: "Unexpected process launched"
+    - ruleName: "Unexpected process arguments"
+    - ruleName: "Files Access Anomalies in container"
+    - ruleName: "Syscalls Anomalies in container"
+    - ruleName: "Linux Capabilities Anomalies in container"
+    - ruleName: "DNS Anomalies in container"
+    - ruleName: "DNS answer outside the profiled addresses"
+    - ruleName: "DNS exfiltration attempt"
+    - ruleName: "Unexpected service account token access"
+    - ruleName: "Workload uses Kubernetes API unexpectedly"
+    - ruleName: "Process executed from malicious source"
+    - ruleName: "Process tries to load a kernel module"
+    - ruleName: "Drifted process executed"
+    - ruleName: "Disallowed ssh connection"
+    - ruleName: "Fileless execution detected"
+    - ruleName: "Process tries to escape container"
+    - ruleName: "Crypto miner launched"
+    - ruleName: "Process executed from mount"
+    - ruleName: "Crypto Mining Related Port Communication"
+    - ruleName: "Crypto Mining Domain Communication"
+    - ruleName: "Read Environment Variables from procfs"
+    - ruleName: "eBPF Program Load"
+    - ruleName: "Soft link created over sensitive file"
+    - ruleName: "Unexpected Sensitive File Access"
+    - ruleName: "Hard link created over sensitive file"
+    - ruleName: "Exec to pod"
+    - ruleName: "Port forward"
+    - ruleName: "Unexpected Egress Network Traffic"
+    - ruleName: "Unexpected Ingress Network Traffic"
+    - ruleName: "Malicious Ptrace Usage"
+    - ruleName: "Unexpected io_uring Operation Detected"
+    - ruleName: "Kubelet TLS Exec Request Detected"
+    - ruleName: "Signed profile tampered"
+---
+apiVersion: kubescape.io/v1
+kind: RuntimeRuleAlertBinding
+metadata:
+  name: all-rules-bound-pods
+spec:
+  namespaceSelector:
+    matchExpressions:
+      - key: "kubernetes.io/metadata.name"
+        operator: "NotIn"
+        values:
+        - "kube-system"
+        - "kube-public"
+        - "kube-node-lease"
+        - "kubeconfig"
+        - "kubescape"
+        - "kube-flannel"
+        - "ingress-nginx"
+        - "honey"
+        - "clickhouse"
+        - "local-path-storage"
+        - "gmp-system"
+        - "gmp-public"
+        - "storm"
+        - "lightening"
+        - "cert-manager"
+        - "chain-loadgen"
+        - "pl"
+        - "olm"
+        - "px-operator"
+        - "tailscale-system"
+        - "traefik"
+        - "cilium-secrets"
+        - "external-dns"
+  podSelector:
+    matchExpressions:
+      - key: "kubescape.io/user-defined-profile"
+        operator: "Exists"
   rules:
     - ruleName: "Unexpected process launched"
     - ruleName: "Unexpected process arguments"
