@@ -71,7 +71,9 @@ spec:
         ruleExpression:
           - eventType: open
             expression:  >-
-              !cp.was_path_opened(event.containerId, event.path)
+              !cp.was_path_opened(event.containerId, event.path) ||
+              !cp.was_path_opened_with_flags(event.containerId, event.path,
+              event.flags.filter(f, f in ['O_WRONLY', 'O_RDWR', 'O_CREAT', 'O_TRUNC', 'O_APPEND']))
         uniqueId: event.comm + '_' + event.path
       id: R0002
       isTriggerAlert: true
